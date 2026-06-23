@@ -1,0 +1,91 @@
+:root {
+  --bg: #0f1320;
+  --panel: #171c2e;
+  --panel-2: #1f2740;
+  --text: #e8ecf6;
+  --muted: #98a2c0;
+  --border: #2a3350;
+  --accent: #6ea8fe;
+
+  --off: #2c3550;
+  --night: #3b2a6b;
+  --admit: #7a2c39;
+  --clinic: #1f4f74;
+  --away: #3a3320;
+  --post: #314a3a;
+  --work: #243049;
+  --consult: #5a3a6b;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+header.app {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+header.app h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
+header.app h1 span { color: var(--accent); }
+header.app .sub { color: var(--muted); font-size: 12px; }
+
+.controls { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.controls label { font-size: 12px; color: var(--muted); }
+select, input[type="search"] {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 14px; min-width: 220px;
+}
+select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+
+main { padding: 16px 20px 60px; max-width: 1100px; margin: 0 auto; }
+
+.summary {
+  display: flex; gap: 12px; flex-wrap: wrap; margin: 4px 0 16px;
+}
+.summary .card {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; min-width: 150px;
+}
+.summary .card .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.summary .card .v { font-size: 16px; margin-top: 2px; }
+
+#calendar { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+
+/* FullCalendar dark theming */
+.fc { --fc-border-color: var(--border); --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--panel-2); --fc-today-bg-color: rgba(110,168,254,.12); }
+.fc .fc-toolbar-title { font-size: 18px; }
+.fc .fc-col-header-cell-cushion, .fc .fc-daygrid-day-number { color: var(--muted); text-decoration: none; }
+.fc .fc-button { background: var(--panel-2); border-color: var(--border); color: var(--text);
+  text-transform: capitalize; }
+.fc .fc-button-primary:not(:disabled):hover { background: var(--border); }
+.fc .fc-button-primary:disabled { opacity: .5; }
+.fc-daygrid-day-frame { min-height: 92px; }
+
+.fc-event { border: none !important; border-radius: 6px; padding: 2px 4px; cursor: default; }
+.fc-event .ev-duty { font-weight: 600; font-size: 12px; line-height: 1.15; }
+.fc-event .ev-rot { font-size: 10px; opacity: .85; line-height: 1.1; }
+.fc-event .ev-hrs { font-size: 10px; opacity: .7; }
+
+.ev-off { background: var(--off); color: #aeb8d6; }
+.ev-night { background: var(--night); }
+.ev-admit { background: var(--admit); }
+.ev-clinic { background: var(--clinic); }
+.ev-away { background: var(--away); color: #e7dca6; }
+.ev-post { background: var(--post); }
+.ev-work { background: var(--work); }
+.ev-consult { background: var(--consult); }
+
+.legend { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 2px; font-size: 12px; color: var(--muted); }
+.legend .chip { display: inline-flex; align-items: center; gap: 6px; }
+.legend .sw { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+
+.note { color: var(--muted); font-size: 12px; margin-top: 18px; line-height: 1.5; }
+.note code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+a { color: var(--accent); }
