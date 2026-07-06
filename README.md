@@ -5,7 +5,9 @@ It folds three separate documents — the **assignment table**, the **block
 schedule**, and the **master / MICU call templates** — into one place: pick your
 name and see your whole year, day by day, on a calendar.
 
-🔗 Static site, no backend. Deployed to GitHub Pages via GitHub Actions.
+🔗 **Live site:** https://ttabernacki.github.io/CornCal/ (deep link: `/?p=TT`)
+
+Static site, no backend. Deployed to GitHub Pages via GitHub Actions.
 
 ## How it works
 
