@@ -40,7 +40,16 @@ half follows weeks 3–4.
 
 - `CIMA` / `Elective` → clinic **9a–5p Mon–Fri**, off weekends.
 - `Vacation` → off all week.
-- MICU uses the **no-ED-interns** template (`Int 5`; `5a/5b` collapse to `5`).
+- **MICU with vs. without ED interns:** Int 1–4 are identical in both variants
+  (verified cell-by-cell); only slot 5 differs. The roster label picks the
+  variant — `MICU Int 5` → no-ED template, `MICU Int 5a`/`5b` → with-ED slots
+  (half Triage, half the no-ED Int-5 duties; the ED intern covers the other half).
+- **Nights & post-call:** every non-off Nightfloat cell (`GM A`, `GM B~`, `4N`, …)
+  is a night shift — 7p–9a base, 7p–7a for the `~`/`^` handoff nights,
+  7p–9:30a for 4N cover; MICU nights 6:45p–7a. A night ends the *next*
+  morning, so an otherwise-off day following a night renders as **Post-call**
+  with its signout time, and post-call days do **not** count as off days for
+  the weekend gold/silver/black tiers.
 - Split cells `A | B` → week 1 = `A`, week 2 = `B`.
 - Off-service blocks (MSKCC, HSS, Neurology, ED, Psych ED, ID Consult, Core
   Research, …) render as labeled "away" time (no day-level detail).

@@ -82,16 +82,23 @@
   function hoursFor(family, duty) {
     const d = (duty || "").trim();
     if (d === "" || /^OFF$/i.test(d)) return "";
-    if (/^POST$/i.test(d)) return "post-call";
+    if (/^POST$/i.test(d)) return "off after AM signout";
+    // Nightfloat duties are cover labels (GM A, GM B~, 4N, ...) — every
+    // non-off cell is a night shift starting 7p and ending the next morning.
+    if (family === "NF") {
+      if (d.includes("~") || d.includes("^")) return "7p–7a";
+      if (d === "4N") return "7p–9:30a";
+      return "7p–9a";
+    }
     if (/night/i.test(d)) {
       if (family === "MICU") return "6:45p–7a";
       if (family === "4N") return d.includes("^") ? "7p–7a" : "7p–9:30a";
-      if (family === "NF") return d.includes("~") || d.includes("^") ? "7p–7a" : "7p–9a";
       if (family === "Geri") return "7p–9a";
       return "nights";
     }
     switch (family) {
       case "MICU":
+        if (/^Triage$/i.test(d)) return "6:30a–6:45p";
         return /^CCT$/.test(d) ? "7a–6:45p" : "6:30a–6:45p";
       case "4N":
         if (/admit/i.test(d)) return "7a–7p";
@@ -122,7 +129,7 @@
   }
 
   // Classify a duty for coloring.
-  function classify(kind, duty) {
+  function classify(kind, duty, family) {
     if (kind === "off") return "off";
     if (kind === "away") return "away";
     if (kind === "clinic") return "clinic";
@@ -130,10 +137,26 @@
     if (d === "" ) return "work";
     if (/^OFF$/i.test(d)) return "off";
     if (/^POST$/i.test(d)) return "post";
+    // Every non-off Nightfloat cell is a night shift regardless of its label.
+    if (family === "NF") return "night";
     if (/night/i.test(d)) return "night";
     if (/admit|late/i.test(d)) return "admit";
+    if (/^Triage$/i.test(d)) return "consult";
     if (/consult/i.test(d)) return "consult";
     return "work";
+  }
+
+  // When a night shift ends the next morning (per master-schedule footnotes).
+  function nightEndOf(family, duty) {
+    const d = (duty || "").trim();
+    if (family === "MICU") return "7a";
+    if (family === "4N") return d.includes("^") ? "7a" : "9:30a";
+    if (family === "NF") {
+      if (d.includes("~") || d.includes("^")) return "7a";
+      if (d === "4N") return "9:30a";
+      return "9a";
+    }
+    return "9a";
   }
 
   /*
@@ -183,14 +206,36 @@
     }
     const duty = (tmpl[String(week.weekOfBlock)] || tmpl[week.weekOfBlock] || [])[wd] || "";
     const fam = familyOf(label);
+    const cls = classify("template", duty, fam);
     return {
       ...base,
       rotation: tmplKey,
       duty: duty === "" ? "Work" : duty,
       hours: hoursFor(fam, duty),
       kind: "template",
-      cls: classify("template", duty),
+      cls,
+      endsNext: cls === "night" ? nightEndOf(fam, duty) : null,
     };
+  }
+
+  /*
+   * Post-call pass: every night shift ends the NEXT morning, so an
+   * otherwise-off day that follows a night is really a post-call day —
+   * the person is on service until signout that morning. Rewrite those
+   * days so the calendar says when they actually get out.
+   * (Explicit POST cells in the MICU/4N templates already carry this.)
+   */
+  function applyPostCall(days) {
+    for (let i = 0; i < days.length - 1; i++) {
+      const cur = days[i], nxt = days[i + 1];
+      if (cur.cls !== "night" || !cur.endsNext) continue;
+      if (fmtISO(addDays(parseISO(cur.date), 1)) !== nxt.date) continue;
+      if (nxt.cls !== "off") continue; // another night = mid-stretch; workdays untouched
+      nxt.cls = "post";
+      nxt.duty = /vacation/i.test(nxt.duty) ? "Vacation (post-call)" : "Post-call";
+      nxt.hours = "off after " + cur.endsNext + " signout";
+    }
+    return days;
   }
 
   // Produce every day for a person across the whole academic year.
@@ -202,7 +247,7 @@
       if (r) out.push(r);
       d = addDays(d, 1);
     }
-    return out;
+    return applyPostCall(out);
   }
 
   function makeContext(data) {
@@ -217,7 +262,7 @@
   const api = {
     parseISO, fmtISO, addDays, weekdayMon0, splitCell,
     makeWeekResolver, makeContext, resolveDay, resolveYear,
-    familyOf, hoursFor, classify,
+    familyOf, hoursFor, classify, nightEndOf, applyPostCall,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
