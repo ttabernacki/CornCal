@@ -13,6 +13,7 @@
   let ctx = null;
   let calendar = null;
   let eventsByPerson = {}; // init -> FullCalendar events
+  let weekendTier = {};    // ISO date (Sat or Sun) -> "gold" | "silver" | "black"
 
   async function loadJSON(path) {
     const r = await fetch(path);
@@ -20,8 +21,7 @@
     return r.json();
   }
 
-  function toEvents(person) {
-    const days = E.resolveYear(person, ctx);
+  function toEvents(days) {
     return days.map((d) => ({
       start: d.date,
       allDay: true,
@@ -29,6 +29,35 @@
       classNames: ["ev-" + d.cls],
       extendedProps: { rotation: d.rotation, hours: d.hours, duty: d.duty },
     }));
+  }
+
+  // Tier each weekend (Sat + Sun) by how many of the two days are OFF:
+  //   2 off -> gold, 1 off -> silver, 0 off -> black.
+  function buildWeekendTiers(days) {
+    weekendTier = {};
+    const offByWeekend = {}; // saturdayISO -> count of OFF days that weekend
+    for (const d of days) {
+      const dt = E.parseISO(d.date);
+      const dow = dt.getDay(); // 0 Sun ... 6 Sat
+      if (dow !== 6 && dow !== 0) continue;
+      const satISO = dow === 6 ? d.date : E.fmtISO(E.addDays(dt, -1));
+      if (!(satISO in offByWeekend)) offByWeekend[satISO] = 0;
+      if (d.cls === "off") offByWeekend[satISO] += 1;
+    }
+    for (const satISO in offByWeekend) {
+      const off = offByWeekend[satISO];
+      const tier = off >= 2 ? "gold" : off === 1 ? "silver" : "black";
+      const sunISO = E.fmtISO(E.addDays(E.parseISO(satISO), 1));
+      weekendTier[satISO] = tier;
+      weekendTier[sunISO] = tier;
+    }
+  }
+
+  function weekendClassNames(arg) {
+    const tier = weekendTier[E.fmtISO(arg.date)];
+    if (!tier) return [];
+    const dow = arg.date.getDay();
+    return ["wk-box", "wk-" + tier, dow === 6 ? "wk-sat" : "wk-sun"];
   }
 
   function renderSummary(person) {
@@ -58,12 +87,17 @@
 
   function selectPerson(init) {
     const person = data.assignments.find((p) => p.init === init);
-    const events = person ? toEvents(person) : [];
+    const days = person ? E.resolveYear(person, ctx) : [];
+    const events = toEvents(days);
+    buildWeekendTiers(days);
     if (person) eventsByPerson[person.init] = events;
 
     const src = calendar.getEventSources();
     src.forEach((s) => s.remove());
     if (events.length) calendar.addEventSource(events);
+    // A fresh function reference forces FullCalendar to re-run the day-cell
+    // class hook, re-coloring the weekend boxes for the newly selected person.
+    calendar.setOption("dayCellClassNames", (a) => weekendClassNames(a));
     renderSummary(person);
 
     const url = new URL(window.location);
@@ -103,6 +137,7 @@
       headerToolbar: { left: "prev,next today", center: "title", right: "" },
       displayEventTime: false,
       dayMaxEvents: false,
+      dayCellClassNames: (arg) => weekendClassNames(arg),
       eventContent: (arg) => {
         const { rotation, hours, duty } = arg.event.extendedProps;
         const wrap = document.createElement("div");

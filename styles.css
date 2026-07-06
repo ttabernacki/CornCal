@@ -89,3 +89,28 @@ main { padding: 16px 20px 60px; max-width: 1100px; margin: 0 auto; }
 .note { color: var(--muted); font-size: 12px; margin-top: 18px; line-height: 1.5; }
 .note code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
 a { color: var(--accent); }
+
+/* Weekend highlighting: a subtle box around each Sat+Sun pair, tiered by how
+   many of the two days are OFF — gold (both off), silver (one off), black (none). */
+.fc .wk-gold   { --wk-c: #e6be4a; background: rgba(230, 190, 74, 0.16); }
+.fc .wk-silver { --wk-c: #cdd5e2; background: rgba(205, 213, 226, 0.13); }
+.fc .wk-black  { --wk-c: #05070d; background: rgba(0, 0, 0, 0.55); }
+
+/* Draw the box on the outer three sides of each weekend cell so the Sat and Sun
+   cells together read as one rounded box. */
+.fc .wk-sat .fc-daygrid-day-frame {
+  box-shadow: inset 2px 0 0 var(--wk-c), inset 0 2px 0 var(--wk-c), inset 0 -2px 0 var(--wk-c);
+  border-top-left-radius: 8px; border-bottom-left-radius: 8px;
+}
+.fc .wk-sun .fc-daygrid-day-frame {
+  box-shadow: inset -2px 0 0 var(--wk-c), inset 0 2px 0 var(--wk-c), inset 0 -2px 0 var(--wk-c);
+  border-top-right-radius: 8px; border-bottom-right-radius: 8px;
+}
+/* Keep the black-tier weekend's day number legible on the dark fill. */
+.fc .wk-black .fc-daygrid-day-number { color: #e8ecf6; }
+
+/* Legend swatches for the weekend tiers. */
+.legend .wk-swatch { border: 2px solid; }
+.wk-sw-gold   { background: rgba(230, 190, 74, 0.16); border-color: #e6be4a; }
+.wk-sw-silver { background: rgba(205, 213, 226, 0.13); border-color: #cdd5e2; }
+.wk-sw-black  { background: rgba(0, 0, 0, 0.55); border-color: #4a5573; }
