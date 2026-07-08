@@ -114,3 +114,66 @@ a { color: var(--accent); }
 .wk-sw-gold   { background: rgba(230, 190, 74, 0.16); border-color: #e6be4a; }
 .wk-sw-silver { background: rgba(205, 213, 226, 0.13); border-color: #cdd5e2; }
 .wk-sw-black  { background: rgba(0, 0, 0, 0.55); border-color: #4a5573; }
+
+/* ---------------------------- Tabs ---------------------------- */
+.tabs { display: flex; gap: 4px; margin-left: auto; }
+.tab-btn {
+  background: transparent; color: var(--muted); border: 1px solid transparent;
+  border-radius: 8px; padding: 8px 14px; font-size: 14px; cursor: pointer;
+}
+.tab-btn:hover { color: var(--text); background: var(--panel-2); }
+.tab-btn.active { color: var(--text); background: var(--panel-2); border-color: var(--border); }
+
+/* ------------------- Who's free together ------------------- */
+.together { display: flex; gap: 18px; align-items: flex-start; }
+.tg-side { flex: 0 0 260px; position: sticky; top: 76px; }
+.tg-main { flex: 1 1 auto; min-width: 0; }
+
+.tg-picker {
+  margin: 10px 0; max-height: 62vh; overflow: auto;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 6px;
+}
+.tg-group-h {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted);
+  padding: 8px 8px 4px;
+}
+.tg-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.tg-item:hover { background: var(--panel-2); }
+.tg-item input { accent-color: var(--accent); width: 15px; height: 15px; }
+.tg-clear { width: 100%; background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px; font-size: 13px; cursor: pointer; }
+.tg-clear:hover { color: var(--text); }
+
+.tg-selected { color: var(--text); font-size: 14px; margin: 2px 0 12px; min-height: 18px; }
+.tg-selected b { color: var(--accent); }
+.tg-empty, .tg-none { color: var(--muted); font-size: 13px; margin: 6px 0; }
+
+.tg-section { background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 14px; }
+.tg-section h3 { margin: 0 0 10px; font-size: 15px; }
+.tg-sub { color: var(--muted); font-size: 12px; font-weight: 400; }
+
+.tg-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  padding: 6px 0; border-top: 1px solid var(--border); font-size: 13px; }
+.tg-row:first-of-type { border-top: none; }
+.tg-row > b { min-width: 128px; color: var(--text); }
+.tg-svc { font-weight: 600; color: var(--accent); }
+.tg-roles { color: var(--muted); }
+
+.tg-chipwrap { display: flex; gap: 6px; flex-wrap: wrap; }
+.tg-chip { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+.tg-off { background: var(--off); color: #cfd8ef; }
+.tg-night { background: var(--night); }
+.tg-admit { background: var(--admit); }
+.tg-clinic { background: var(--clinic); }
+.tg-away { background: var(--away); color: #e7dca6; }
+.tg-post { background: var(--post); }
+.tg-work { background: var(--work); }
+.tg-consult { background: var(--consult); }
+
+@media (max-width: 720px) {
+  .together { flex-direction: column; }
+  .tg-side { position: static; flex-basis: auto; width: 100%; }
+  .tg-picker { max-height: 40vh; }
+}

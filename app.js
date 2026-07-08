@@ -7,7 +7,14 @@
     person: document.getElementById("person"),
     summary: document.getElementById("summary"),
     calendar: document.getElementById("calendar"),
+    tabs: document.getElementById("tabs"),
+    tgSearch: document.getElementById("together-search"),
+    tgPicker: document.getElementById("together-picker"),
+    tgClear: document.getElementById("together-clear"),
+    tgSelected: document.getElementById("together-selected"),
+    tgResults: document.getElementById("together-results"),
   };
+  const selectedInits = new Set();
 
   let data = null;
   let ctx = null;
@@ -151,6 +158,136 @@
     calendar.render();
   }
 
+  // ---------------------------- Tabs ----------------------------
+  function switchTab(name) {
+    for (const b of els.tabs.querySelectorAll(".tab-btn"))
+      b.classList.toggle("active", b.dataset.tab === name);
+    document.getElementById("tab-schedule").hidden = name !== "schedule";
+    document.getElementById("tab-together").hidden = name !== "together";
+    // FullCalendar mis-sizes if it was laid out while hidden — fix on return.
+    if (name === "schedule" && calendar) calendar.updateSize();
+  }
+
+  // ---------------------- "Who's free together" ----------------------
+  const firstName = (p) => p.name.split(",")[0];
+
+  function populateTogether() {
+    const groups = {};
+    for (const p of data.assignments) (groups[p.track] ||= []).push(p);
+    const frag = document.createDocumentFragment();
+    for (const track of Object.keys(groups)) {
+      const g = document.createElement("div");
+      g.className = "tg-group";
+      const h = document.createElement("div");
+      h.className = "tg-group-h";
+      h.textContent = track;
+      g.appendChild(h);
+      groups[track]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((p) => {
+          const lab = document.createElement("label");
+          lab.className = "tg-item";
+          lab.dataset.name = (p.name + " " + p.init).toLowerCase();
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.value = p.init;
+          cb.addEventListener("change", () => {
+            if (cb.checked) selectedInits.add(p.init);
+            else selectedInits.delete(p.init);
+            runTogether();
+          });
+          lab.appendChild(cb);
+          const s = document.createElement("span");
+          s.textContent = p.name;
+          lab.appendChild(s);
+          g.appendChild(lab);
+        });
+      frag.appendChild(g);
+    }
+    els.tgPicker.appendChild(frag);
+  }
+
+  function filterTogether(q) {
+    q = (q || "").trim().toLowerCase();
+    for (const lab of els.tgPicker.querySelectorAll(".tg-item"))
+      lab.hidden = q && !lab.dataset.name.includes(q);
+    for (const g of els.tgPicker.querySelectorAll(".tg-group")) {
+      const any = [...g.querySelectorAll(".tg-item")].some((l) => !l.hidden);
+      g.style.display = any ? "" : "none";
+    }
+  }
+
+  const fmtDate = (iso) =>
+    E.parseISO(iso).toLocaleDateString(undefined, {
+      weekday: "short", month: "short", day: "numeric",
+    });
+  const fmtRange = (r) => (r.days > 1 ? fmtDate(r.start) + " – " + fmtDate(r.end) : fmtDate(r.start));
+
+  function section(title, sub, body) {
+    return `<div class="tg-section"><h3>${title}${
+      sub ? ` <span class="tg-sub">${sub}</span>` : ""
+    }</h3>${body}</div>`;
+  }
+
+  function renderTogether(g, people) {
+    const firsts = people.map(firstName);
+
+    const evenings = g.freeEvenings.length
+      ? g.freeEvenings
+          .map((e) => {
+            const chips = e.statuses
+              .map(
+                (s, i) =>
+                  `<span class="tg-chip tg-${s.cls}">${firsts[i]}: ${s.duty}${
+                    s.hours ? " · " + s.hours : ""
+                  }</span>`
+              )
+              .join("");
+            return `<div class="tg-row"><b>${fmtDate(e.date)}</b><div class="tg-chipwrap">${chips}</div></div>`;
+          })
+          .join("")
+      : `<p class="tg-none">No evening in the next month where everyone is off nights.</p>`;
+
+    const ranges = E.groupRanges(g.fullDaysOff);
+    const off = ranges.length
+      ? `<div class="tg-chipwrap">${ranges
+          .map((r) => `<span class="tg-chip tg-off">${fmtRange(r)}</span>`)
+          .join("")}</div>`
+      : `<p class="tg-none">No full day this year where everyone is completely off.</p>`;
+
+    const rot = g.sharedRotations.length
+      ? g.sharedRotations
+          .map(
+            (s) =>
+              `<div class="tg-row"><b>${fmtDate(s.start)} – ${fmtDate(s.end)}</b>` +
+              `<span class="tg-svc">${s.service}</span>` +
+              `<span class="tg-roles">${s.roles
+                .map((r, i) => firsts[i] + ": " + r)
+                .join(" · ")}</span></div>`
+          )
+          .join("")
+      : `<p class="tg-none">Never on the same inpatient service (electives & clinic excluded).</p>`;
+
+    els.tgResults.innerHTML =
+      section("Free evenings", "next month · nobody on an overnight", evenings) +
+      section("Full days off together", `rest of the year · ${g.fullDaysOff.length} day(s)`, off) +
+      section("On the same rotation", "whole year · electives &amp; clinic excluded", rot);
+  }
+
+  function runTogether() {
+    const people = [...selectedInits]
+      .map((i) => data.assignments.find((p) => p.init === i))
+      .filter(Boolean);
+    els.tgSelected.innerHTML = people.length
+      ? `<b>${people.length} selected:</b> ${people.map(firstName).join(", ")}`
+      : "";
+    if (!people.length) {
+      els.tgResults.innerHTML = `<p class="tg-empty">Select people on the left to find when they’re free together and when they overlap on service.</p>`;
+      return;
+    }
+    renderTogether(E.analyzeGroup(people, ctx, new Date()), people);
+  }
+
   async function main() {
     const [weeks, assignments, templates, meta] = await Promise.all([
       loadJSON("data/weeks.json"),
@@ -163,6 +300,19 @@
 
     populatePicker();
     initCalendar();
+    populateTogether();
+    runTogether();
+
+    els.tabs.addEventListener("click", (e) => {
+      const b = e.target.closest(".tab-btn");
+      if (b) switchTab(b.dataset.tab);
+    });
+    els.tgSearch.addEventListener("input", (e) => filterTogether(e.target.value));
+    els.tgClear.addEventListener("click", () => {
+      selectedInits.clear();
+      els.tgPicker.querySelectorAll("input:checked").forEach((cb) => (cb.checked = false));
+      runTogether();
+    });
 
     els.person.addEventListener("change", (e) => selectPerson(e.target.value));
 
