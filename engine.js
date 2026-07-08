@@ -250,6 +250,127 @@
     return applyPostCall(out);
   }
 
+  // ---- group overlap analysis (for the "who's free together" tab) --------
+
+  // The role label a person holds during a given week (split cells resolved).
+  function labelForWeek(person, week) {
+    const cell = person.columns[week.column - 1];
+    if (!cell) return "";
+    const [a, b] = splitCell(cell);
+    return week.weekOfBlock % 2 === 1 ? a : b;
+  }
+
+  // Collapse a role slot to the shared clinical service two people would be on
+  // together. Returns null for anything that isn't a shared inpatient rotation
+  // — electives, vacation, ambulatory (CIMA), call pools, and off-service time.
+  function normalizeService(label) {
+    const l = (label || "").trim();
+    if (!l) return null;
+    let m = l.match(/^Med (Red|Green|Blue|Orange|Yellow) Int/i);
+    if (m) return "Med " + m[1][0].toUpperCase() + m[1].slice(1).toLowerCase();
+    if (/^Renal Int/i.test(l)) return "Renal";
+    if (/^MICU Int/i.test(l)) return "MICU";
+    if (/^4N Int/i.test(l)) return "4N";
+    if (/^Nightfloat Int/i.test(l)) return "Nightfloat";
+    if (/^Med Gold Int/i.test(l)) return "Gold";
+    if (/^Platinum Int/i.test(l)) return "Platinum";
+    if (/^Lymphoma Int/i.test(l)) return "Lymphoma";
+    if (/^Geriatrics Int/i.test(l)) return "Geriatrics";
+    return null; // Elective, CIMA, Vacation, MSKCC/HSS/Neuro/ED, Jeopardy, ID Consult...
+  }
+
+  function startOfDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  /*
+   * Cross-reference a group of people. `today` bounds the time-limited queries.
+   * Returns:
+   *   freeEvenings   - next ~month: days where nobody is on a night shift
+   *   fullDaysOff    - rest of year: days where everybody is fully off
+   *   sharedRotations- whole year: maximal runs on the same clinical service
+   */
+  function analyzeGroup(people, ctx, today) {
+    const maps = people.map((p) => {
+      const m = {};
+      for (const d of resolveYear(p, ctx)) m[d.date] = d;
+      return m;
+    });
+    const ys = ctx.weekResolver.yearStart;
+    const ye = ctx.weekResolver.yearEnd;
+    const from = startOfDay(today) > ys ? startOfDay(today) : new Date(ys);
+
+    const dayRows = (iso) => maps.map((m) => m[iso]);
+    const everyone = (rows, fn) => rows.length > 0 && rows.every(fn);
+
+    // 1) free evenings — next 31 days
+    const freeEvenings = [];
+    const monthEnd = addDays(from, 31);
+    for (let d = new Date(from); d < ye && d < monthEnd; d = addDays(d, 1)) {
+      const iso = fmtISO(d);
+      const rows = dayRows(iso);
+      if (everyone(rows, (r) => r && r.cls !== "night")) {
+        freeEvenings.push({
+          date: iso,
+          statuses: rows.map((r) => ({ duty: r.duty, cls: r.cls, hours: r.hours })),
+        });
+      }
+    }
+
+    // 2) full days off together — from today through end of year
+    const fullDaysOff = [];
+    for (let d = new Date(from); d < ye; d = addDays(d, 1)) {
+      const iso = fmtISO(d);
+      const rows = dayRows(iso);
+      if (everyone(rows, (r) => r && r.cls === "off")) fullDaysOff.push(iso);
+    }
+
+    // 3) shared rotations — maximal consecutive weeks on the same service
+    const weeks = [...ctx.weeks].sort((a, b) => (a.start < b.start ? -1 : 1));
+    const sharedRotations = [];
+    let run = null;
+    const flush = () => { if (run) { sharedRotations.push(run); run = null; } };
+    for (const w of weeks) {
+      const labels = people.map((p) => labelForWeek(p, w));
+      const svcs = labels.map(normalizeService);
+      const svc = svcs[0];
+      const match = svc && svcs.every((s) => s === svc);
+      if (match) {
+        if (run && run.service === svc) {
+          run.endWeek = w;
+        } else {
+          flush();
+          run = { service: svc, startWeek: w, endWeek: w, labels };
+        }
+      } else {
+        flush();
+      }
+    }
+    flush();
+    const shaped = sharedRotations.map((r) => ({
+      service: r.service,
+      start: r.startWeek.start,
+      end: fmtISO(addDays(parseISO(r.endWeek.start), 6)),
+      roles: r.labels,
+    }));
+
+    return { freeEvenings, fullDaysOff, sharedRotations: shaped, count: people.length };
+  }
+
+  // Collapse a sorted list of ISO dates into [{start,end,days}] ranges.
+  function groupRanges(isoDates) {
+    const out = [];
+    for (const iso of isoDates) {
+      const last = out[out.length - 1];
+      if (last && fmtISO(addDays(parseISO(last.end), 1)) === iso) {
+        last.end = iso; last.days += 1;
+      } else {
+        out.push({ start: iso, end: iso, days: 1 });
+      }
+    }
+    return out;
+  }
+
   function makeContext(data) {
     return {
       weeks: data.weeks,
@@ -263,6 +384,7 @@
     parseISO, fmtISO, addDays, weekdayMon0, splitCell,
     makeWeekResolver, makeContext, resolveDay, resolveYear,
     familyOf, hoursFor, classify, nightEndOf, applyPostCall,
+    labelForWeek, normalizeService, analyzeGroup, groupRanges,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
