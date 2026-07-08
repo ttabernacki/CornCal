@@ -230,10 +230,10 @@
   }
   const freeFromLabel = (min) => (min === 0 ? "off all day" : "free " + fmtTime(min) + " – morning");
 
-  function section(title, sub, body) {
-    return `<div class="tg-section"><h3>${title}${
+  function section(title, sub, body, open) {
+    return `<details class="tg-section"${open ? " open" : ""}><summary>${title}${
       sub ? ` <span class="tg-sub">${sub}</span>` : ""
-    }</h3>${body}</div>`;
+    }</summary>${body}</details>`;
   }
 
   function renderTogether(g, people) {
@@ -276,9 +276,9 @@
       : `<p class="tg-none">Never on the same rotation (electives excluded).</p>`;
 
     els.tgResults.innerHTML =
-      section("Free evenings", "next month · when the group is off call", evenings) +
-      section("Full days off together", `rest of the year · ${g.fullDaysOff.length} day(s)`, off) +
-      section("On the same rotation", "whole year · electives excluded (CIMA included)", rot);
+      section("Full days off together", `rest of the year · ${g.fullDaysOff.length} day(s)`, off, true) +
+      section("On the same rotation", "whole year · electives excluded (CIMA included)", rot, true) +
+      section("Free evenings", "next month · when the group is off call", evenings, false);
   }
 
   function runTogether() {
