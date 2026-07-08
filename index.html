@@ -12,45 +12,66 @@
       <h1>Corn<span>Cal</span></h1>
       <div class="sub">Intern schedule harmonizer · AY 2026–2027</div>
     </div>
-    <div class="controls">
-      <label for="person">Find your schedule:</label>
-      <select id="person" aria-label="Select person">
-        <option value="">— select a name —</option>
-      </select>
-    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab-btn active" data-tab="schedule">My schedule</button>
+      <button class="tab-btn" data-tab="together">Who’s free together</button>
+    </nav>
   </header>
 
   <main>
-    <div class="summary" id="summary"></div>
-    <div id="calendar"></div>
+    <!-- ===================== Tab 1: single-person calendar ===================== -->
+    <section class="tab-panel" id="tab-schedule">
+      <div class="controls">
+        <label for="person">Find your schedule:</label>
+        <select id="person" aria-label="Select person">
+          <option value="">— select a name —</option>
+        </select>
+      </div>
 
-    <div class="legend" id="legend">
-      <span class="chip"><span class="sw ev-admit"></span> Admit / long call</span>
-      <span class="chip"><span class="sw ev-night"></span> Nights</span>
-      <span class="chip"><span class="sw ev-work"></span> Working day</span>
-      <span class="chip"><span class="sw ev-clinic"></span> Clinic (CIMA/Elective)</span>
-      <span class="chip"><span class="sw ev-consult"></span> Consults</span>
-      <span class="chip"><span class="sw ev-post"></span> Post-call</span>
-      <span class="chip"><span class="sw ev-away"></span> Off-service / away</span>
-      <span class="chip"><span class="sw ev-off"></span> Off / vacation</span>
-    </div>
+      <div class="summary" id="summary"></div>
+      <div id="calendar"></div>
 
-    <div class="legend" id="legend-weekend">
-      <span class="chip">Weekend box:</span>
-      <span class="chip"><span class="sw wk-swatch wk-sw-gold"></span> both days off</span>
-      <span class="chip"><span class="sw wk-swatch wk-sw-silver"></span> one day off</span>
-      <span class="chip"><span class="sw wk-swatch wk-sw-black"></span> no days off</span>
-    </div>
+      <div class="legend" id="legend">
+        <span class="chip"><span class="sw ev-admit"></span> Admit / long call</span>
+        <span class="chip"><span class="sw ev-night"></span> Nights</span>
+        <span class="chip"><span class="sw ev-work"></span> Working day</span>
+        <span class="chip"><span class="sw ev-clinic"></span> Clinic (CIMA/Elective)</span>
+        <span class="chip"><span class="sw ev-consult"></span> Consults / Triage</span>
+        <span class="chip"><span class="sw ev-post"></span> Post-call</span>
+        <span class="chip"><span class="sw ev-away"></span> Off-service / away</span>
+        <span class="chip"><span class="sw ev-off"></span> Off / vacation</span>
+      </div>
 
-    <p class="note" id="disclaimer">
-      Built by harmonizing the 2026–2027 intern <strong>assignment table</strong>,
-      <strong>block schedule</strong>, and <strong>master/MICU call templates</strong>.
-      Day-level duties come from the master schedule for template-backed rotations
-      (GM color teams, Gold/Platinum/Lymphoma, Geriatrics, 4N, MICU, Nightfloat, Jeopardy).
-      <code>CIMA</code> and <code>Elective</code> render as clinic 9a–5p Mon–Fri.
-      Off-service blocks (MSKCC, HSS, Neurology, ED, etc.) show as labeled away-time.
-      Verify against official sources before relying on it.
-    </p>
+      <div class="legend" id="legend-weekend">
+        <span class="chip">Weekend box:</span>
+        <span class="chip"><span class="sw wk-swatch wk-sw-gold"></span> both days off</span>
+        <span class="chip"><span class="sw wk-swatch wk-sw-silver"></span> one day off</span>
+        <span class="chip"><span class="sw wk-swatch wk-sw-black"></span> no days off</span>
+      </div>
+
+      <p class="note" id="disclaimer">
+        Built by harmonizing the 2026–2027 intern <strong>assignment table</strong>,
+        <strong>block schedule</strong>, and <strong>master/MICU call templates</strong>.
+        <code>CIMA</code> and <code>Elective</code> render as clinic 9a–5p Mon–Fri;
+        off-service blocks (MSKCC, HSS, Neurology, ED, …) show as labeled away-time.
+        Verify against official sources before relying on it.
+      </p>
+    </section>
+
+    <!-- ===================== Tab 2: who's free together ===================== -->
+    <section class="tab-panel" id="tab-together" hidden>
+      <div class="together">
+        <div class="tg-side">
+          <input type="search" id="together-search" placeholder="Filter names…" aria-label="Filter names" />
+          <div class="tg-picker" id="together-picker"></div>
+          <button class="tg-clear" id="together-clear" type="button">Clear selection</button>
+        </div>
+        <div class="tg-main">
+          <div class="tg-selected" id="together-selected"></div>
+          <div id="together-results"></div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
