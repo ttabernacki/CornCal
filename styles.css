@@ -159,6 +159,7 @@ a { color: var(--accent); }
 .tg-row > b { min-width: 128px; color: var(--text); }
 .tg-svc { font-weight: 600; color: var(--accent); }
 .tg-roles { color: var(--muted); }
+.tg-freefrom { font-weight: 600; color: #7fd6a0; white-space: nowrap; }
 
 .tg-chipwrap { display: flex; gap: 6px; flex-wrap: wrap; }
 .tg-chip { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; white-space: nowrap;

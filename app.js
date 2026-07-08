@@ -222,6 +222,13 @@
       weekday: "short", month: "short", day: "numeric",
     });
   const fmtRange = (r) => (r.days > 1 ? fmtDate(r.start) + " – " + fmtDate(r.end) : fmtDate(r.start));
+  function fmtTime(min) {
+    const h = Math.floor(min / 60), m = min % 60;
+    const ap = h >= 12 ? "p" : "a";
+    let hh = h % 12; if (hh === 0) hh = 12;
+    return hh + (m ? ":" + String(m).padStart(2, "0") : "") + ap;
+  }
+  const freeFromLabel = (min) => (min === 0 ? "off all day" : "free " + fmtTime(min) + " – morning");
 
   function section(title, sub, body) {
     return `<div class="tg-section"><h3>${title}${
@@ -243,7 +250,7 @@
                   }</span>`
               )
               .join("");
-            return `<div class="tg-row"><b>${fmtDate(e.date)}</b><div class="tg-chipwrap">${chips}</div></div>`;
+            return `<div class="tg-row"><b>${fmtDate(e.date)}</b><span class="tg-freefrom">${freeFromLabel(e.freeFrom)}</span><div class="tg-chipwrap">${chips}</div></div>`;
           })
           .join("")
       : `<p class="tg-none">No evening in the next month where everyone is off nights.</p>`;
@@ -266,12 +273,12 @@
                 .join(" · ")}</span></div>`
           )
           .join("")
-      : `<p class="tg-none">Never on the same inpatient service (electives & clinic excluded).</p>`;
+      : `<p class="tg-none">Never on the same rotation (electives excluded).</p>`;
 
     els.tgResults.innerHTML =
-      section("Free evenings", "next month · nobody on an overnight", evenings) +
+      section("Free evenings", "next month · when the group is off call", evenings) +
       section("Full days off together", `rest of the year · ${g.fullDaysOff.length} day(s)`, off) +
-      section("On the same rotation", "whole year · electives &amp; clinic excluded", rot);
+      section("On the same rotation", "whole year · electives excluded (CIMA included)", rot);
   }
 
   function runTogether() {

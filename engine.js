@@ -260,9 +260,9 @@
     return week.weekOfBlock % 2 === 1 ? a : b;
   }
 
-  // Collapse a role slot to the shared clinical service two people would be on
-  // together. Returns null for anything that isn't a shared inpatient rotation
-  // — electives, vacation, ambulatory (CIMA), call pools, and off-service time.
+  // Collapse a role slot to the shared rotation two people would be on together
+  // (inpatient services + CIMA ambulatory). Returns null for things that aren't
+  // a shared rotation — electives, vacation, call pools, and off-service time.
   function normalizeService(label) {
     const l = (label || "").trim();
     if (!l) return null;
@@ -276,11 +276,44 @@
     if (/^Platinum Int/i.test(l)) return "Platinum";
     if (/^Lymphoma Int/i.test(l)) return "Lymphoma";
     if (/^Geriatrics Int/i.test(l)) return "Geriatrics";
-    return null; // Elective, CIMA, Vacation, MSKCC/HSS/Neuro/ED, Jeopardy, ID Consult...
+    if (/^CIMA/i.test(l)) return "CIMA"; // ambulatory continuity block (included)
+    return null; // Elective, Vacation, MSKCC/HSS/Neuro/ED, Jeopardy, ID Consult...
   }
 
   function startOfDay(date) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  /*
+   * Minute-of-day a person becomes free ("off call") on a given day.
+   *   0    = free the whole day (off / vacation / weekend off)
+   *   null = NOT reliably free this evening (on a night shift, on Jeopardy
+   *          backup call, or an off-service shift whose hours we can't pin down)
+   * Otherwise the end-of-shift time. The group is free from the LATEST of these.
+   */
+  function freeFromMinutes(day) {
+    if (!day) return null;
+    const d = (day.duty || "").trim();
+    switch (day.cls) {
+      case "night": return null;            // working that night
+      case "off": return 0;                 // free all day
+      case "clinic": return 17 * 60;        // clinic out ~5p
+      case "post": {                        // free from the morning signout
+        const m = (day.hours || "").match(/(\d{1,2})(?::(\d{2}))?\s*([ap])\b/i);
+        if (m) { let h = (+m[1] % 12) + (m[3].toLowerCase() === "p" ? 12 : 0);
+                 return h * 60 + (m[2] ? +m[2] : 0); }
+        return 12 * 60;                      // "AM signout" -> noon (free by evening anyway)
+      }
+      case "away":                          // off-service: ED-type is shift-based/unknown
+        return /emergency|ED IM|Psych ED/i.test(d) ? null : 17 * 60;
+    }
+    const fam = familyOf(day.rotation || "");
+    if (fam === "Jeopardy") return null;    // backup call all evening
+    if (fam === "MICU") return 18 * 60 + 45;                       // 6:45p
+    if (fam === "4N") return /admit/i.test(d) ? 19 * 60 : 17 * 60; // admit 7p else 5p
+    if (fam === "GM" || fam === "Gold") return /admit/i.test(d) ? 18 * 60 + 30 : 17 * 60; // long call 6:30p
+    if (fam === "Platinum" || fam === "Lymphoma") return /late/i.test(d) ? 19 * 60 : 17 * 60; // late 7p
+    return 17 * 60;                          // default: out ~5p
   }
 
   /*
@@ -303,18 +336,21 @@
     const dayRows = (iso) => maps.map((m) => m[iso]);
     const everyone = (rows, fn) => rows.length > 0 && rows.every(fn);
 
-    // 1) free evenings — next 31 days
+    // 1) free evenings — next 31 days. The group is off-call from the LATEST
+    //    end-of-work time; a null (nights / Jeopardy / ED shift) disqualifies.
     const freeEvenings = [];
     const monthEnd = addDays(from, 31);
     for (let d = new Date(from); d < ye && d < monthEnd; d = addDays(d, 1)) {
       const iso = fmtISO(d);
       const rows = dayRows(iso);
-      if (everyone(rows, (r) => r && r.cls !== "night")) {
-        freeEvenings.push({
-          date: iso,
-          statuses: rows.map((r) => ({ duty: r.duty, cls: r.cls, hours: r.hours })),
-        });
-      }
+      if (!everyone(rows, (r) => !!r)) continue;
+      const mins = rows.map(freeFromMinutes);
+      if (mins.some((m) => m === null)) continue;
+      freeEvenings.push({
+        date: iso,
+        freeFrom: Math.max(...mins), // minutes; 0 = free all day
+        statuses: rows.map((r) => ({ duty: r.duty, cls: r.cls, hours: r.hours })),
+      });
     }
 
     // 2) full days off together — from today through end of year
@@ -384,7 +420,7 @@
     parseISO, fmtISO, addDays, weekdayMon0, splitCell,
     makeWeekResolver, makeContext, resolveDay, resolveYear,
     familyOf, hoursFor, classify, nightEndOf, applyPostCall,
-    labelForWeek, normalizeService, analyzeGroup, groupRanges,
+    labelForWeek, normalizeService, analyzeGroup, groupRanges, freeFromMinutes,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
