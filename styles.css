@@ -1,10 +1,12 @@
-/* CornCal — Cornell-carnelian light theme, clean & mobile-first. */
+/* CornCal — Weill Cornell Medicine red/orange theme, clean & mobile-first. */
 :root {
-  /* Cornell palette */
-  --red: #b31b1b;          /* carnelian */
-  --red-dark: #8e1616;
-  --red-tint: rgba(179, 27, 27, 0.08);
-  --red-line: rgba(179, 27, 27, 0.22);
+  /* WCM palette: red -> orange brand gradient */
+  --red: #c8102e;
+  --red-dark: #970d22;
+  --orange: #ff6a13;
+  --brand-grad: linear-gradient(100deg, var(--red) 0%, var(--orange) 100%);
+  --red-tint: rgba(200, 16, 46, 0.08);
+  --red-line: rgba(200, 16, 46, 0.24);
 
   /* neutrals (warm) */
   --bg: #f6f5f3;
@@ -16,15 +18,16 @@
   --muted: #6c6a66;
   --accent: var(--red);
 
-  /* duty colors: soft tint bg + readable fg (light theme) */
-  --off-bg: #eceff3;   --off-fg: #55606f;
-  --night-bg: #e7e5f6; --night-fg: #443a94;
-  --admit-bg: #fbe4e4; --admit-fg: #a81a1a;
-  --clinic-bg: #e1eff4; --clinic-fg: #1a6a85;
-  --away-bg: #f5ecd8;  --away-fg: #856313;
-  --post-bg: #e6f1e9;  --post-fg: #2c7a4b;
-  --work-bg: #edeff3;  --work-fg: #4b5563;
-  --consult-bg: #f0e6f6; --consult-fg: #78389a;
+  /* duty colors: solid, saturated chips with white text — legible on
+     both the white calendar panel and the FullCalendar list rows. */
+  --off-bg: #64748b;    --off-fg: #ffffff;
+  --night-bg: #4338ca;  --night-fg: #ffffff;
+  --admit-bg: #c8102e;  --admit-fg: #ffffff;
+  --clinic-bg: #0e7490; --clinic-fg: #ffffff;
+  --away-bg: #b45309;   --away-fg: #ffffff;
+  --post-bg: #15803d;   --post-fg: #ffffff;
+  --work-bg: #475569;   --work-fg: #ffffff;
+  --consult-bg: #7c3aed; --consult-fg: #ffffff;
 
   --shadow: 0 1px 2px rgba(24, 24, 24, 0.04), 0 2px 8px rgba(24, 24, 24, 0.05);
   --radius: 12px;
@@ -50,10 +53,15 @@ header.app {
   box-shadow: 0 1px 0 rgba(0,0,0,.02);
   position: sticky; top: 0; z-index: 20;
 }
-header.app .brand { display: flex; flex-direction: column; }
 header.app h1 { font-size: 21px; margin: 0; letter-spacing: -0.02em; font-weight: 800; }
-header.app h1 span { color: var(--red); }
+header.app h1 span {
+  background: var(--brand-grad); -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+}
 header.app .sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
+header.app .logo-mark { width: 34px; height: 34px; flex: none; display: block; }
+header.app .brand { display: flex; flex-direction: row; align-items: center; gap: 10px; }
+header.app .brand .brand-text { display: flex; flex-direction: column; }
 
 /* segmented tab control */
 .tabs {
@@ -68,7 +76,7 @@ header.app .sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
   cursor: pointer; white-space: nowrap; transition: background .12s, color .12s;
 }
 .tab-btn:hover { color: var(--text); }
-.tab-btn.active { color: #fff; background: var(--red); box-shadow: 0 1px 2px rgba(179,27,27,.25); }
+.tab-btn.active { color: #fff; background: var(--brand-grad); box-shadow: 0 1px 2px rgba(200,16,46,.28); }
 
 /* ---------------------------- Layout ---------------------------- */
 main { padding: 20px; max-width: 1120px; margin: 0 auto; }
@@ -88,8 +96,8 @@ button.btn {
   border-radius: 10px; padding: 9px 14px; font-size: 13.5px; font-weight: 600; cursor: pointer;
 }
 button.btn:hover { background: var(--panel-2); }
-button.btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
-button.btn.primary:hover { background: var(--red-dark); }
+button.btn.primary { background: var(--brand-grad); border-color: var(--red); color: #fff; }
+button.btn.primary:hover { filter: brightness(0.94); }
 
 /* summary cards */
 .summary { display: flex; gap: 12px; flex-wrap: wrap; margin: 0 0 16px; }
@@ -111,7 +119,7 @@ button.btn.primary:hover { background: var(--red-dark); }
   --fc-border-color: var(--border);
   --fc-page-bg-color: var(--panel);
   --fc-neutral-bg-color: var(--panel-2);
-  --fc-today-bg-color: rgba(179, 27, 27, 0.06);
+  --fc-today-bg-color: rgba(200, 16, 46, 0.06);
   --fc-list-event-hover-bg-color: var(--panel-2);
   --fc-event-border-color: transparent;
 }
@@ -129,14 +137,14 @@ button.btn.primary:hover { background: var(--red-dark); }
 .fc .fc-button-primary:hover { background: var(--panel-2); color: var(--text); }
 .fc .fc-button-primary:disabled { opacity: .45; }
 .fc .fc-button-primary:not(:disabled).fc-button-active,
-.fc .fc-button-primary:not(:disabled):active { background: var(--red); border-color: var(--red); color: #fff; }
+.fc .fc-button-primary:not(:disabled):active { background: var(--brand-grad); border-color: var(--red); color: #fff; }
 .fc .fc-button-primary:focus, .fc .fc-button-primary:focus-visible { box-shadow: 0 0 0 3px var(--red-tint); }
 
 .fc-daygrid-day-frame { min-height: 92px; }
 .fc-event { border: none !important; border-radius: 7px; padding: 2px 5px; cursor: default; }
 .fc-event .ev-duty { font-weight: 700; font-size: 12px; line-height: 1.15; }
-.fc-event .ev-rot { font-size: 10px; opacity: .85; line-height: 1.1; }
-.fc-event .ev-hrs { font-size: 10px; opacity: .72; }
+.fc-event .ev-rot { font-size: 10px; opacity: .92; line-height: 1.1; }
+.fc-event .ev-hrs { font-size: 10px; opacity: .85; }
 
 /* list (agenda) view — great on mobile */
 .fc .fc-list-event td { cursor: default; }
