@@ -185,3 +185,50 @@ a { color: var(--accent); }
   .tg-side { position: static; flex-basis: auto; width: 100%; }
   .tg-picker { max-height: 40vh; }
 }
+
+/* ------------------- Who's off on… ------------------- */
+.off-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.off-controls label { font-size: 14px; color: var(--text); }
+.off-controls input[type="date"] {
+  background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; font-size: 14px; min-width: 0;
+}
+.off-controls input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.8); cursor: pointer; }
+.off-today { width: auto; padding: 8px 12px; }
+
+.off-head { font-size: 15px; margin-bottom: 12px; color: var(--text); }
+.off-head b { color: var(--accent); font-size: 17px; }
+
+.off-person {
+  display: flex; gap: 14px; justify-content: space-between; align-items: center; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 8px;
+}
+.off-who { min-width: 190px; }
+.off-name { font-weight: 600; font-size: 14px; }
+.off-role { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+.off-week { display: flex; gap: 4px; }
+.off-day { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 52px; }
+.off-dow { font-size: 10px; color: var(--muted); }
+.off-duty {
+  font-size: 10.5px; padding: 3px 4px; border-radius: 5px; width: 100%;
+  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.off-day.is-sel .off-duty { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* duty color chips shared by the week grid */
+.d-off { background: var(--off); color: #cfd8ef; }
+.d-night { background: var(--night); }
+.d-admit { background: var(--admit); }
+.d-clinic { background: var(--clinic); }
+.d-away { background: var(--away); color: #e7dca6; }
+.d-post { background: var(--post); }
+.d-work { background: var(--work); }
+.d-consult { background: var(--consult); }
+.d-none { color: var(--muted); border: 1px dashed var(--border); }
+
+@media (max-width: 720px) {
+  .off-person { justify-content: flex-start; }
+  .off-week { overflow-x: auto; }
+}

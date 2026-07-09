@@ -393,6 +393,42 @@
     return { freeEvenings, fullDaysOff, sharedRotations: shaped, count: people.length };
   }
 
+  // The Monday that begins the Mon–Sun week containing `date`.
+  function mondayOf(date) {
+    return addDays(date, -weekdayMon0(date));
+  }
+
+  /*
+   * Everyone who is fully OFF on a given date, with the role they hold that
+   * week and their whole Mon–Sun schedule. Used by the "Who's off on…" tab.
+   */
+  function offOnDate(assignments, ctx, dateISO) {
+    const date = parseISO(dateISO);
+    if (date < ctx.weekResolver.yearStart || date >= ctx.weekResolver.yearEnd)
+      return { selected: dateISO, weekDates: [], people: [] };
+    const mon = mondayOf(date);
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) weekDates.push(fmtISO(addDays(mon, i)));
+
+    const people = [];
+    for (const p of assignments) {
+      const day = resolveDay(date, p, ctx);
+      if (!day || day.cls !== "off") continue;
+      const week = weekDates.map((iso) => {
+        const r = resolveDay(parseISO(iso), p, ctx);
+        return r
+          ? { date: iso, duty: r.duty, cls: r.cls, hours: r.hours }
+          : { date: iso, duty: "—", cls: "none", hours: "" };
+      });
+      people.push({
+        name: p.name, init: p.init, track: p.track,
+        role: day.label, rotation: day.rotation, offType: day.duty, week,
+      });
+    }
+    people.sort((a, b) => a.name.localeCompare(b.name));
+    return { selected: dateISO, mon: fmtISO(mon), weekDates, people };
+  }
+
   // Collapse a sorted list of ISO dates into [{start,end,days}] ranges.
   function groupRanges(isoDates) {
     const out = [];
@@ -421,6 +457,7 @@
     makeWeekResolver, makeContext, resolveDay, resolveYear,
     familyOf, hoursFor, classify, nightEndOf, applyPostCall,
     labelForWeek, normalizeService, analyzeGroup, groupRanges, freeFromMinutes,
+    mondayOf, offOnDate,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
