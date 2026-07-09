@@ -54,7 +54,7 @@ header.app {
   position: sticky; top: 0; z-index: 20;
 }
 header.app .brand { display: flex; flex-direction: row; align-items: center; gap: 9px; flex: none; }
-header.app .wcm-mark { width: 34px; height: 34px; flex: none; display: block; }
+header.app .wcm-mark { width: 40px; height: 40px; flex: none; display: block; object-fit: contain; }
 header.app .wcm-wordmark {
   display: flex; flex-direction: column; line-height: 1.05;
   font-family: Georgia, "Times New Roman", serif; font-weight: 800; font-size: 12.5px;
