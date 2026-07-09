@@ -102,12 +102,13 @@
     buildWeekendTiers(days);
     if (person) eventsByPerson[person.init] = events;
 
-    const src = calendar.getEventSources();
-    src.forEach((s) => s.remove());
-    if (events.length) calendar.addEventSource(events);
-    // A fresh function reference forces FullCalendar to re-run the day-cell
-    // class hook, re-coloring the weekend boxes for the newly selected person.
-    calendar.setOption("dayCellClassNames", (a) => weekendClassNames(a));
+    if (calendar) {
+      calendar.getEventSources().forEach((s) => s.remove());
+      if (events.length) calendar.addEventSource(events);
+      // A fresh function reference forces FullCalendar to re-run the day-cell
+      // class hook, re-coloring the weekend boxes for the newly selected person.
+      calendar.setOption("dayCellClassNames", (a) => weekendClassNames(a));
+    }
     renderSummary(person);
 
     const url = new URL(window.location);
@@ -135,8 +136,10 @@
   }
 
   function initCalendar() {
+    const narrow = window.matchMedia("(max-width: 640px)").matches;
     calendar = new FullCalendar.Calendar(els.calendar, {
-      initialView: "dayGridMonth",
+      // list (agenda) reads far better than a cramped month grid on phones
+      initialView: narrow ? "listMonth" : "dayGridMonth",
       initialDate: ctx.weekResolver.yearStart,
       validRange: {
         start: E.fmtISO(ctx.weekResolver.yearStart),
@@ -144,7 +147,9 @@
       },
       firstDay: 1, // Monday
       height: "auto",
-      headerToolbar: { left: "prev,next today", center: "title", right: "" },
+      headerToolbar: { left: "prev,next today", center: "title", right: "dayGridMonth,listMonth" },
+      buttonText: { today: "Today", month: "Month", list: "List" },
+      views: { listMonth: { listDayFormat: { weekday: "long", month: "short", day: "numeric" }, listDaySideFormat: false } },
       displayEventTime: false,
       dayMaxEvents: false,
       dayCellClassNames: (arg) => weekendClassNames(arg),
@@ -370,7 +375,17 @@
     ctx = E.makeContext(data);
 
     populatePicker();
-    initCalendar();
+    // Calendar depends on the FullCalendar CDN; if it fails to load, keep the
+    // rest of the app working rather than breaking every tab.
+    try {
+      if (typeof FullCalendar === "undefined") throw new Error("FullCalendar failed to load");
+      initCalendar();
+    } catch (err) {
+      els.calendar.innerHTML =
+        `<div class="cal-fallback">Calendar view unavailable (couldn’t load the calendar library). ` +
+        `The other tabs still work.</div>`;
+      console.error(err);
+    }
     populateTogether();
     runTogether();
     initOff();
