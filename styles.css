@@ -53,15 +53,19 @@ header.app {
   box-shadow: 0 1px 0 rgba(0,0,0,.02);
   position: sticky; top: 0; z-index: 20;
 }
-header.app h1 { font-size: 21px; margin: 0; letter-spacing: -0.02em; font-weight: 800; }
-header.app h1 span {
-  background: var(--brand-grad); -webkit-background-clip: text; background-clip: text;
-  color: transparent;
+header.app .brand { display: flex; flex-direction: row; align-items: center; gap: 9px; flex: none; }
+header.app .wcm-mark { width: 34px; height: 34px; flex: none; display: block; }
+header.app .wcm-wordmark {
+  display: flex; flex-direction: column; line-height: 1.05;
+  font-family: Georgia, "Times New Roman", serif; font-weight: 800; font-size: 12.5px;
+  white-space: nowrap;
 }
-header.app .sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
-header.app .logo-mark { width: 34px; height: 34px; flex: none; display: block; }
-header.app .brand { display: flex; flex-direction: row; align-items: center; gap: 10px; }
-header.app .brand .brand-text { display: flex; flex-direction: column; }
+header.app .wm-red { color: var(--red); }
+header.app .wm-orange { color: var(--orange); }
+header.app .page-title {
+  font-size: 17px; margin: 0; font-weight: 700; letter-spacing: -0.01em; color: var(--text);
+  padding-left: 14px; border-left: 1px solid var(--border); flex: 1 1 auto; min-width: 200px;
+}
 
 /* segmented tab control */
 .tabs {
@@ -265,6 +269,7 @@ button.btn.primary:hover { filter: brightness(0.94); }
 /* ---------------------------- Responsive ---------------------------- */
 @media (max-width: 760px) {
   header.app { gap: 10px 14px; padding: 10px 14px; }
+  header.app .page-title { font-size: 15px; padding-left: 0; border-left: none; flex-basis: 100%; order: 3; min-width: 0; }
   .tabs { width: 100%; margin-left: 0; }
   .tab-btn { flex: 1 1 auto; text-align: center; padding: 9px 8px; }
   main { padding: 14px; }
