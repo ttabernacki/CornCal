@@ -399,6 +399,59 @@
   }
 
   /*
+   * Resolve a single day WITH the post-call rewrite applied, so a day that
+   * follows an overnight reads as "Post-call" exactly like the calendar does.
+   * (resolveDay alone doesn't run applyPostCall — only resolveYear does.)
+   */
+  function resolveDayLive(date, person, ctx) {
+    const seq = [];
+    const prev = resolveDay(addDays(date, -1), person, ctx);
+    const cur = resolveDay(date, person, ctx);
+    if (prev) seq.push(prev);
+    if (cur) seq.push(cur);
+    if (!cur) return null;
+    applyPostCall(seq);
+    return seq[seq.length - 1];
+  }
+
+  /*
+   * For a selected intern and date: the team rotation they're on that day and
+   * every OTHER intern on that same rotation who is working (not off) that day.
+   * "Same rotation" uses normalizeService (team level: Med Red ≠ Med Green;
+   * MICU/Nightfloat/CIMA grouped), so electives, off-service, vacation and
+   * call pools have no shared rotation. Nights and post-call still count as on
+   * service; only fully-off interns are excluded.
+   */
+  function rotationPeersOn(assignments, ctx, dateISO, selfInit) {
+    const date = parseISO(dateISO);
+    if (date < ctx.weekResolver.yearStart || date >= ctx.weekResolver.yearEnd)
+      return { date: dateISO, inYear: false, self: null, service: null, peers: [] };
+
+    const self = assignments.find((p) => p.init === selfInit) || null;
+    const selfDay = self ? resolveDayLive(date, self, ctx) : null;
+    const service = selfDay ? normalizeService(selfDay.label) : null;
+    const selfInfo = selfDay
+      ? { name: self.name, role: selfDay.label, rotation: selfDay.rotation,
+          duty: selfDay.duty, hours: selfDay.hours, cls: selfDay.cls }
+      : null;
+
+    const peers = [];
+    if (service) {
+      for (const p of assignments) {
+        if (self && p.init === self.init) continue;
+        const day = resolveDayLive(date, p, ctx);
+        if (!day) continue;
+        if (normalizeService(day.label) !== service) continue;
+        if (day.cls === "off") continue; // excluded: off that day
+        peers.push({ name: p.name, init: p.init, track: p.track,
+                     role: day.label, duty: day.duty, hours: day.hours, cls: day.cls });
+      }
+      peers.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return { date: dateISO, inYear: true, self: selfInfo, service, peers };
+  }
+
+  /*
    * Everyone who is fully OFF on a given date, with the role they hold that
    * week and their whole Mon–Sun schedule. Used by the "Who's off on…" tab.
    */
@@ -457,7 +510,7 @@
     makeWeekResolver, makeContext, resolveDay, resolveYear,
     familyOf, hoursFor, classify, nightEndOf, applyPostCall,
     labelForWeek, normalizeService, analyzeGroup, groupRanges, freeFromMinutes,
-    mondayOf, offOnDate,
+    mondayOf, offOnDate, resolveDayLive, rotationPeersOn,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

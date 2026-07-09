@@ -7,6 +7,7 @@
     person: document.getElementById("person"),
     summary: document.getElementById("summary"),
     calendar: document.getElementById("calendar"),
+    dayDetail: document.getElementById("day-detail"),
     tabs: document.getElementById("tabs"),
     tgSearch: document.getElementById("together-search"),
     tgPicker: document.getElementById("together-picker"),
@@ -22,8 +23,10 @@
   let data = null;
   let ctx = null;
   let calendar = null;
+  let currentInit = null;  // the person whose schedule is shown
   let eventsByPerson = {}; // init -> FullCalendar events
   let weekendTier = {};    // ISO date (Sat or Sun) -> "gold" | "silver" | "black"
+  let dayPicked = null;    // DOM node currently highlighted as the selected day
 
   async function loadJSON(path) {
     const r = await fetch(path);
@@ -97,6 +100,7 @@
 
   function selectPerson(init) {
     const person = data.assignments.find((p) => p.init === init);
+    currentInit = person ? person.init : null;
     const days = person ? E.resolveYear(person, ctx) : [];
     const events = toEvents(days);
     buildWeekendTiers(days);
@@ -109,6 +113,8 @@
       // class hook, re-coloring the weekend boxes for the newly selected person.
       calendar.setOption("dayCellClassNames", (a) => weekendClassNames(a));
     }
+    dayPicked = null;
+    clearDayDetail(); // stale once the person changes
     renderSummary(person);
 
     const url = new URL(window.location);
@@ -153,6 +159,9 @@
       displayEventTime: false,
       dayMaxEvents: false,
       dayCellClassNames: (arg) => weekendClassNames(arg),
+      // click a day (month grid) or an event (either view) -> who's on my rotation
+      dateClick: (info) => showDayDetail(info.dateStr, info.dayEl),
+      eventClick: (info) => showDayDetail(info.event.startStr, info.el),
       eventContent: (arg) => {
         const { rotation, hours, duty } = arg.event.extendedProps;
         const wrap = document.createElement("div");
@@ -164,6 +173,67 @@
       },
     });
     calendar.render();
+  }
+
+  // ------------------ Day detail: who's on my rotation ------------------
+  const fmtDayLong = (iso) =>
+    E.parseISO(iso).toLocaleDateString(undefined, {
+      weekday: "long", month: "long", day: "numeric",
+    });
+
+  function clearDayDetail() {
+    if (dayPicked) { dayPicked.classList.remove("dd-picked"); dayPicked = null; }
+    if (!els.dayDetail) return;
+    els.dayDetail.hidden = true;
+    els.dayDetail.innerHTML = "";
+  }
+
+  function pickDay(el) {
+    if (dayPicked) dayPicked.classList.remove("dd-picked");
+    dayPicked = el || null;
+    if (dayPicked) dayPicked.classList.add("dd-picked");
+  }
+
+  function showDayDetail(iso, el) {
+    if (!els.dayDetail) return;
+    pickDay(el);
+    if (!currentInit) {
+      els.dayDetail.hidden = false;
+      els.dayDetail.innerHTML =
+        `<p class="dd-empty">Pick your name above, then tap any day to see who else is on your rotation that day.</p>`;
+      return;
+    }
+    const r = E.rotationPeersOn(data.assignments, ctx, iso, currentInit);
+    const head = `<div class="dd-head"><span class="dd-date">${fmtDayLong(iso)}</span>` +
+      (r.self
+        ? `<span class="dd-self"><span class="dd-chip d-${r.self.cls}">${r.self.duty}</span>` +
+          `<span class="dd-selfrot">${r.self.role}${r.self.hours ? " · " + r.self.hours : ""}</span></span>`
+        : "") +
+      `</div>`;
+
+    let body;
+    if (!r.self) {
+      body = `<p class="dd-empty">You're not on the medicine schedule this day.</p>`;
+    } else if (!r.service) {
+      body = `<p class="dd-empty">${r.self.duty === "OFF" || r.self.cls === "off"
+        ? "You're off this day"
+        : "You're on " + r.self.rotation} — not a shared team rotation, so there's no co-rotation list.</p>`;
+    } else if (!r.peers.length) {
+      body = `<p class="dd-empty">No one else is on <b>${r.service}</b> today (everyone else on the rotation is off).</p>`;
+    } else {
+      const rows = r.peers
+        .map((p) =>
+          `<div class="dd-peer"><span class="dd-name">${fullName(p.name)}</span>` +
+          `<span class="dd-role">${p.role}</span>` +
+          `<span class="dd-chip d-${p.cls}" title="${p.hours || ""}">${p.duty}${p.hours ? " · " + p.hours : ""}</span></div>`
+        )
+        .join("");
+      body =
+        `<div class="dd-sub"><b>${r.peers.length}</b> other ${r.peers.length === 1 ? "intern" : "interns"} on <b>${r.service}</b> today` +
+        ` <span class="dd-note">· off-that-day excluded</span></div>` + rows;
+    }
+    els.dayDetail.hidden = false;
+    els.dayDetail.innerHTML = head + body;
   }
 
   // ---------------------------- Tabs ----------------------------
