@@ -13,6 +13,9 @@
     tgClear: document.getElementById("together-clear"),
     tgSelected: document.getElementById("together-selected"),
     tgResults: document.getElementById("together-results"),
+    offDate: document.getElementById("off-date"),
+    offToday: document.getElementById("off-today"),
+    offResults: document.getElementById("off-results"),
   };
   const selectedInits = new Set();
 
@@ -164,6 +167,7 @@
       b.classList.toggle("active", b.dataset.tab === name);
     document.getElementById("tab-schedule").hidden = name !== "schedule";
     document.getElementById("tab-together").hidden = name !== "together";
+    document.getElementById("tab-off").hidden = name !== "off";
     // FullCalendar mis-sizes if it was laid out while hidden — fix on return.
     if (name === "schedule" && calendar) calendar.updateSize();
   }
@@ -295,6 +299,66 @@
     renderTogether(E.analyzeGroup(people, ctx, new Date()), people);
   }
 
+  // ---------------------- "Who's off on…" ----------------------
+  const WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const fmtDateFull = (iso) =>
+    E.parseISO(iso).toLocaleDateString(undefined, {
+      weekday: "long", month: "long", day: "numeric", year: "numeric",
+    });
+  // person "Last, First" -> "First Last"
+  const fullName = (name) => {
+    const c = name.indexOf(",");
+    return c === -1 ? name : name.slice(c + 1).trim() + " " + name.slice(0, c);
+  };
+
+  function renderOff(iso) {
+    const r = E.offOnDate(data.assignments, ctx, iso);
+    if (!r.people.length) {
+      els.offResults.innerHTML = `<p class="tg-none">No one is fully off on ${fmtDateFull(iso)}.</p>`;
+      return;
+    }
+    const head = `<div class="off-head"><b>${r.people.length}</b> off on ${fmtDateFull(iso)}</div>`;
+    const rows = r.people
+      .map((p) => {
+        const cells = p.week
+          .map((d, i) => {
+            const sel = d.date === iso ? " is-sel" : "";
+            const title = d.duty + (d.hours ? " · " + d.hours : "");
+            return `<div class="off-day${sel}"><span class="off-dow">${WD[i]}</span>` +
+              `<span class="off-duty d-${d.cls}" title="${title}">${d.duty}</span></div>`;
+          })
+          .join("");
+        return `<div class="off-person"><div class="off-who">` +
+          `<div class="off-name">${fullName(p.name)}</div>` +
+          `<div class="off-role">${p.role} · ${p.track}</div></div>` +
+          `<div class="off-week">${cells}</div></div>`;
+      })
+      .join("");
+    els.offResults.innerHTML = head + rows;
+  }
+
+  function initOff() {
+    const ys = E.fmtISO(ctx.weekResolver.yearStart);
+    const ye = E.fmtISO(E.addDays(ctx.weekResolver.yearEnd, -1));
+    els.offDate.min = ys;
+    els.offDate.max = ye;
+    // default to today, clamped into the academic year
+    let today = E.fmtISO(new Date());
+    if (today < ys) today = ys;
+    if (today > ye) today = ye;
+    els.offDate.value = today;
+    renderOff(today);
+    els.offDate.addEventListener("change", () => {
+      if (els.offDate.value) renderOff(els.offDate.value);
+    });
+    els.offToday.addEventListener("click", () => {
+      let t = E.fmtISO(new Date());
+      if (t < ys) t = ys; if (t > ye) t = ye;
+      els.offDate.value = t;
+      renderOff(t);
+    });
+  }
+
   async function main() {
     const [weeks, assignments, templates, meta] = await Promise.all([
       loadJSON("data/weeks.json"),
@@ -309,6 +373,7 @@
     initCalendar();
     populateTogether();
     runTogether();
+    initOff();
 
     els.tabs.addEventListener("click", (e) => {
       const b = e.target.closest(".tab-btn");

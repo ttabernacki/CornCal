@@ -15,6 +15,7 @@
     <nav class="tabs" id="tabs">
       <button class="tab-btn active" data-tab="schedule">My schedule</button>
       <button class="tab-btn" data-tab="together">Who’s free together</button>
+      <button class="tab-btn" data-tab="off">Who’s off on…</button>
     </nav>
   </header>
 
@@ -71,6 +72,16 @@
           <div id="together-results"></div>
         </div>
       </div>
+    </section>
+
+    <!-- ===================== Tab 3: who's off on a date ===================== -->
+    <section class="tab-panel" id="tab-off" hidden>
+      <div class="off-controls">
+        <label for="off-date">Who’s off on</label>
+        <input type="date" id="off-date" />
+        <button class="tg-clear off-today" id="off-today" type="button">Today</button>
+      </div>
+      <div id="off-results"></div>
     </section>
   </main>
 
