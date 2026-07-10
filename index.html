@@ -55,6 +55,7 @@
 
       <div class="summary" id="summary" hidden></div>
       <div id="calendar" hidden></div>
+      <p class="cal-hint" id="cal-hint" hidden>Tap any day to see who else is on that rotation.</p>
 
       <div class="dd-modal" id="day-modal" hidden>
         <div class="dd-backdrop" data-close></div>
@@ -81,6 +82,17 @@
         <span class="chip"><span class="sw wk-swatch wk-sw-silver"></span> one day off</span>
         <span class="chip"><span class="sw wk-swatch wk-sw-black"></span> no days off</span>
       </div>
+
+      <details class="glossary" id="glossary" hidden>
+        <summary>What do the shift codes mean?</summary>
+        <p class="gl-note">
+          The bold code on each day comes straight from the master call template; below it is the
+          rotation, and the hours. <b>OFF</b> = no clinical duty; <b>Post-call</b> = off after the
+          morning sign-out; a <code>~</code> or <code>^</code> marks a longer overnight (out ~7a
+          instead of ~9a). Here’s every code in this schedule, with its hours:
+        </p>
+        <div class="gl-grid" id="glossary-body"></div>
+      </details>
 
       <p class="note" id="disclaimer" hidden>
         Built by harmonizing the 2026–2027 intern <strong>assignment table</strong>,

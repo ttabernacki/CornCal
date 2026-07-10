@@ -9,6 +9,9 @@
     personList: document.getElementById("person-list"),
     personCombo: document.getElementById("person-combo"),
     scheduleEmpty: document.getElementById("schedule-empty"),
+    calHint: document.getElementById("cal-hint"),
+    glossary: document.getElementById("glossary"),
+    glossaryBody: document.getElementById("glossary-body"),
     legend: document.getElementById("legend"),
     legendWeekend: document.getElementById("legend-weekend"),
     disclaimer: document.getElementById("disclaimer"),
@@ -130,6 +133,7 @@
     dayPicked = null;
     clearDayDetail(); // stale once the person changes
     renderSummary(person);
+    if (person) renderGlossary(days);
     setScheduleEmpty(!person);
     if (els.gcalBtn) els.gcalBtn.hidden = !person;
     if (els.icsBtn) els.icsBtn.hidden = !person;
@@ -150,11 +154,42 @@
     const hide = (el, h) => { if (el) el.hidden = h; };
     hide(els.scheduleEmpty, !empty);
     hide(els.calendar, empty);
+    hide(els.calHint, empty);
     hide(els.summary, empty);
+    hide(els.glossary, empty);
     hide(els.legend, empty);
     hide(els.legendWeekend, empty);
     hide(els.disclaimer, empty);
     if (!empty && calendar) calendar.updateSize();
+  }
+
+  // Per-person glossary: every distinct duty code in their year with its hours,
+  // so the insider shorthand (B2, GM B~, CCT…) is at least pinned to real times.
+  function renderGlossary(days) {
+    if (!els.glossaryBody) return;
+    const seen = new Map(); // duty -> { cls, hours, rotations:Set }
+    for (const d of days) {
+      const key = d.duty;
+      if (!seen.has(key)) seen.set(key, { cls: d.cls, hours: d.hours, rotations: new Set() });
+      if (d.rotation && d.rotation !== d.duty) seen.get(key).rotations.add(d.rotation);
+    }
+    // order roughly by kind so related codes sit together
+    const order = ["admit", "work", "night", "consult", "clinic", "post", "away", "off"];
+    const rows = [...seen.entries()].sort(
+      (a, b) => (order.indexOf(a[1].cls) - order.indexOf(b[1].cls)) || a[0].localeCompare(b[0])
+    );
+    els.glossaryBody.innerHTML = rows
+      .map(([duty, v]) => {
+        const rots = [...v.rotations].slice(0, 2).join(", ");
+        let desc;
+        if (v.hours && rots) desc = `<b>${v.hours}</b> · ${rots}`;
+        else if (v.hours) desc = `<b>${v.hours}</b>`;
+        else if (rots) desc = rots;
+        else desc = "&mdash;";
+        return `<div class="gl-row"><span class="gl-chip d-${v.cls}">${duty}</span>` +
+          `<span class="gl-desc">${desc}</span></div>`;
+      })
+      .join("");
   }
 
   // ---------------------- Searchable name picker (combobox) ----------------------
