@@ -18,16 +18,19 @@
   --muted: #6c6a66;
   --accent: var(--red);
 
-  /* duty colors: solid, saturated chips with white text — legible on
-     both the white calendar panel and the FullCalendar list rows. */
-  --off-bg: #64748b;    --off-fg: #ffffff;
+  /* duty colors: solid, saturated chips — legible on both the white calendar
+     panel and the FullCalendar list rows. "Off" is deliberately the one LIGHT
+     chip (dark text) so free days read as quiet/empty and never look like the
+     dark "working" slate. Nights (indigo) and Consults (fuchsia) are kept far
+     apart on the wheel so they don't blur together. */
+  --off-bg: #d3dae3;    --off-fg: #33415a;
   --night-bg: #4338ca;  --night-fg: #ffffff;
   --admit-bg: #c8102e;  --admit-fg: #ffffff;
   --clinic-bg: #0e7490; --clinic-fg: #ffffff;
   --away-bg: #b45309;   --away-fg: #ffffff;
   --post-bg: #15803d;   --post-fg: #ffffff;
   --work-bg: #475569;   --work-fg: #ffffff;
-  --consult-bg: #7c3aed; --consult-fg: #ffffff;
+  --consult-bg: #a21caf; --consult-fg: #ffffff;
 
   --shadow: 0 1px 2px rgba(24, 24, 24, 0.04), 0 2px 8px rgba(24, 24, 24, 0.05);
   --radius: 12px;
@@ -190,13 +193,15 @@ button.btn.primary:hover { filter: brightness(0.94); }
 .fc .fc-button-primary:focus, .fc .fc-button-primary:focus-visible { box-shadow: 0 0 0 3px var(--red-tint); }
 
 .fc-daygrid-day-frame { min-height: 92px; }
-.fc-event { border: none !important; border-radius: 7px; padding: 2px 5px; cursor: default; }
+.fc-event { border: none !important; border-radius: 7px; padding: 2px 5px; cursor: pointer; }
+/* signal that days are tappable (opens the "who's on this rotation" panel) */
+.fc .fc-daygrid-day { cursor: pointer; }
 .fc-event .ev-duty { font-weight: 700; font-size: 12px; line-height: 1.15; }
 .fc-event .ev-rot { font-size: 10px; opacity: .92; line-height: 1.1; }
 .fc-event .ev-hrs { font-size: 10px; opacity: .85; }
 
 /* list (agenda) view — great on mobile */
-.fc .fc-list-event td { cursor: default; }
+.fc .fc-list-event td { cursor: pointer; }
 .fc .fc-list-event:hover td { background: var(--panel-2); }
 .fc .fc-list-day-cushion { background: var(--panel-2); }
 .fc .fc-list-event-dot { display: none; }
@@ -217,6 +222,26 @@ button.btn.primary:hover { filter: brightness(0.94); }
 .legend { display: flex; gap: 8px 14px; flex-wrap: wrap; margin: 14px 2px; font-size: 12px; color: var(--muted); }
 .legend .chip { display: inline-flex; align-items: center; gap: 6px; }
 .legend .sw { width: 13px; height: 13px; border-radius: 4px; display: inline-block; }
+
+/* "tap a day" hint under the calendar */
+.cal-hint { color: var(--muted); font-size: 12.5px; margin: 12px 2px 0; display: flex; align-items: center; gap: 6px; }
+.cal-hint::before { content: "👆"; font-size: 13px; }
+
+/* per-person shift-code glossary (collapsible) */
+.glossary { margin: 12px 2px 0; font-size: 13px; }
+.glossary > summary {
+  cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 7px;
+  font-weight: 700; color: var(--text); padding: 4px 0;
+}
+.glossary > summary::-webkit-details-marker { display: none; }
+.glossary > summary::before { content: "\25B8"; color: var(--red); font-size: 11px; }
+.glossary[open] > summary::before { content: "\25BE"; }
+.gl-note { color: var(--muted); font-size: 12px; line-height: 1.55; margin: 4px 0 10px; max-width: 68ch; }
+.gl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; }
+.gl-row { display: flex; align-items: center; gap: 9px; padding: 3px 0; }
+.gl-chip { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; white-space: nowrap; min-width: 42px; text-align: center; }
+.gl-desc { font-size: 12.5px; color: var(--muted); }
+.gl-desc b { color: var(--text); font-weight: 600; }
 
 .note { color: var(--muted); font-size: 12px; margin-top: 18px; line-height: 1.55; max-width: 70ch; }
 .note code { background: var(--panel-2); padding: 1px 5px; border-radius: 5px; font-size: .92em; }
