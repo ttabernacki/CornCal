@@ -482,6 +482,58 @@
     return { selected: dateISO, mon: fmtISO(mon), weekDates, people };
   }
 
+  // ---- iCalendar (.ics) export ----------------------------------------
+  function icsEscape(s) {
+    return String(s == null ? "" : s)
+      .replace(/\\/g, "\\\\").replace(/;/g, "\\;")
+      .replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  }
+  // RFC 5545 line folding: no line over 75 octets; continuations start w/ space.
+  function icsFold(line) {
+    if (line.length <= 73) return line;
+    let out = line.slice(0, 73), rest = line.slice(73);
+    while (rest.length > 72) { out += "\r\n " + rest.slice(0, 72); rest = rest.slice(72); }
+    return out + "\r\n " + rest;
+  }
+
+  /*
+   * Build a full-year iCalendar for one intern: an all-day event per assigned
+   * day (duty · rotation, hours in the description). Marked TRANSPARENT so the
+   * events annotate the calendar without blocking it as "busy".
+   */
+  function toICS(name, init, days, stampISO) {
+    const ymd = (iso) => iso.replace(/-/g, "");
+    const dtstamp = stampISO ||
+      new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+    const L = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//CornCal//IM Intern Schedule 2026-2027//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "X-WR-CALNAME:" + icsEscape(name + " — Intern 26–27"),
+      "X-WR-TIMEZONE:America/New_York",
+    ];
+    for (const d of days) {
+      const start = ymd(d.date);
+      const end = ymd(fmtISO(addDays(parseISO(d.date), 1)));
+      const rot = d.rotation && d.rotation !== d.duty ? d.rotation : "";
+      const summary = rot ? d.duty + " · " + rot : d.duty;
+      L.push(
+        "BEGIN:VEVENT",
+        "UID:" + start + "-" + init + "@corncal.ttabernacki.github.io",
+        "DTSTAMP:" + dtstamp,
+        "DTSTART;VALUE=DATE:" + start,
+        "DTEND;VALUE=DATE:" + end,
+        "SUMMARY:" + icsEscape(summary),
+      );
+      if (d.hours) L.push("DESCRIPTION:" + icsEscape(d.hours));
+      L.push("TRANSP:TRANSPARENT", "END:VEVENT");
+    }
+    L.push("END:VCALENDAR");
+    return L.map(icsFold).join("\r\n") + "\r\n";
+  }
+
   // Collapse a sorted list of ISO dates into [{start,end,days}] ranges.
   function groupRanges(isoDates) {
     const out = [];
@@ -510,7 +562,7 @@
     makeWeekResolver, makeContext, resolveDay, resolveYear,
     familyOf, hoursFor, classify, nightEndOf, applyPostCall,
     labelForWeek, normalizeService, analyzeGroup, groupRanges, freeFromMinutes,
-    mondayOf, offOnDate, resolveDayLive, rotationPeersOn,
+    mondayOf, offOnDate, resolveDayLive, rotationPeersOn, toICS,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
