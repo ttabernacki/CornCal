@@ -87,6 +87,11 @@ main { padding: 20px; max-width: 1120px; margin: 0 auto; }
 
 .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
 .controls label { font-size: 13px; color: var(--muted); font-weight: 500; }
+.ics-btn { display: inline-flex; align-items: center; gap: 6px; }
+.ics-btn[hidden] { display: none; }
+.ics-ic { font-size: 15px; line-height: 1; }
+.ics-hint { color: var(--muted); font-size: 12px; margin: -8px 2px 16px; }
+.ics-hint code { background: var(--panel-2); padding: 1px 5px; border-radius: 5px; font-size: .92em; }
 select, input[type="search"], input[type="date"] {
   background: var(--panel); color: var(--text);
   border: 1px solid var(--border-strong); border-radius: 10px;

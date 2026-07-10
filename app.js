@@ -5,6 +5,8 @@
 
   const els = {
     person: document.getElementById("person"),
+    icsBtn: document.getElementById("ics-btn"),
+    icsHint: document.getElementById("ics-hint"),
     summary: document.getElementById("summary"),
     calendar: document.getElementById("calendar"),
     dayDetail: document.getElementById("day-detail"),
@@ -118,6 +120,8 @@
     dayPicked = null;
     clearDayDetail(); // stale once the person changes
     renderSummary(person);
+    if (els.icsBtn) els.icsBtn.hidden = !person;
+    if (els.icsHint) els.icsHint.hidden = !person;
 
     const url = new URL(window.location);
     if (init) url.searchParams.set("p", init);
@@ -246,6 +250,24 @@
     }
     els.dayDetail.innerHTML = head + body;
     openDayModal();
+  }
+
+  // ---------------- iCal export: add my schedule to a phone ----------------
+  function downloadICS() {
+    const person = data.assignments.find((p) => p.init === currentInit);
+    if (!person) return;
+    const days = E.resolveYear(person, ctx);
+    const ics = E.toICS(person.name, person.init, days);
+    const fname = "CornCal-" + fullName(person.name).replace(/[^A-Za-z0-9]+/g, "") + ".ics";
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
 
   // ---------------------------- Tabs ----------------------------
@@ -476,6 +498,8 @@
       const b = e.target.closest(".tab-btn");
       if (b) switchTab(b.dataset.tab);
     });
+
+    if (els.icsBtn) els.icsBtn.addEventListener("click", downloadICS);
 
     // Day-detail modal: close on the × button, backdrop tap, or Escape.
     if (els.dayClose) els.dayClose.addEventListener("click", closeDayDetail);
