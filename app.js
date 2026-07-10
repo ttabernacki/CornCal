@@ -8,6 +8,8 @@
     summary: document.getElementById("summary"),
     calendar: document.getElementById("calendar"),
     dayDetail: document.getElementById("day-detail"),
+    dayModal: document.getElementById("day-modal"),
+    dayClose: document.getElementById("day-close"),
     tabs: document.getElementById("tabs"),
     tgSearch: document.getElementById("together-search"),
     tgPicker: document.getElementById("together-picker"),
@@ -181,26 +183,36 @@
       weekday: "long", month: "long", day: "numeric",
     });
 
-  function clearDayDetail() {
-    if (dayPicked) { dayPicked.classList.remove("dd-picked"); dayPicked = null; }
-    if (!els.dayDetail) return;
-    els.dayDetail.hidden = true;
-    els.dayDetail.innerHTML = "";
+  // Highlight the WHOLE day — clicking the empty cell or the assignment tile
+  // both select the same one clean box. In month view that's the day cell; in
+  // list view (no day cells) it's the event row.
+  function highlightDay(iso, fallbackEl) {
+    if (dayPicked) dayPicked.classList.remove("dd-picked");
+    const cell = els.calendar.querySelector(`.fc-daygrid-day[data-date="${iso}"]`);
+    dayPicked = cell || fallbackEl || null;
+    if (dayPicked) dayPicked.classList.add("dd-picked");
   }
 
-  function pickDay(el) {
-    if (dayPicked) dayPicked.classList.remove("dd-picked");
-    dayPicked = el || null;
-    if (dayPicked) dayPicked.classList.add("dd-picked");
+  function closeDayDetail() {
+    if (dayPicked) { dayPicked.classList.remove("dd-picked"); dayPicked = null; }
+    if (els.dayModal) els.dayModal.hidden = true;
+    document.body.classList.remove("dd-open");
+  }
+  const clearDayDetail = closeDayDetail; // alias used when the person changes
+
+  function openDayModal() {
+    if (!els.dayModal) return;
+    els.dayModal.hidden = false;
+    document.body.classList.add("dd-open");
   }
 
   function showDayDetail(iso, el) {
     if (!els.dayDetail) return;
-    pickDay(el);
+    highlightDay(iso, el);
     if (!currentInit) {
-      els.dayDetail.hidden = false;
       els.dayDetail.innerHTML =
         `<p class="dd-empty">Pick your name above, then tap any day to see who else is on your rotation that day.</p>`;
+      openDayModal();
       return;
     }
     const r = E.rotationPeersOn(data.assignments, ctx, iso, currentInit);
@@ -232,8 +244,8 @@
         `<div class="dd-sub"><b>${r.peers.length}</b> other ${r.peers.length === 1 ? "intern" : "interns"} on <b>${r.service}</b> today` +
         ` <span class="dd-note">· off-that-day excluded</span></div>` + rows;
     }
-    els.dayDetail.hidden = false;
     els.dayDetail.innerHTML = head + body;
+    openDayModal();
   }
 
   // ---------------------------- Tabs ----------------------------
@@ -463,6 +475,16 @@
     els.tabs.addEventListener("click", (e) => {
       const b = e.target.closest(".tab-btn");
       if (b) switchTab(b.dataset.tab);
+    });
+
+    // Day-detail modal: close on the × button, backdrop tap, or Escape.
+    if (els.dayClose) els.dayClose.addEventListener("click", closeDayDetail);
+    if (els.dayModal)
+      els.dayModal.addEventListener("click", (e) => {
+        if (e.target.hasAttribute("data-close")) closeDayDetail();
+      });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && els.dayModal && !els.dayModal.hidden) closeDayDetail();
     });
     els.tgSearch.addEventListener("input", (e) => filterTogether(e.target.value));
     els.tgClear.addEventListener("click", () => {

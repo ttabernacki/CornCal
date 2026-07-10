@@ -267,32 +267,52 @@ button.btn.primary:hover { filter: brightness(0.94); }
 .d-none { color: var(--muted); border: 1px dashed var(--border-strong); }
 
 /* ------------- Day detail: who's on my rotation (schedule tab) ------------- */
-.day-detail {
-  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 14px 16px; margin-top: 14px; box-shadow: var(--shadow);
+/* Modal shell: centered dialog on desktop, bottom sheet on mobile. */
+.dd-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; }
+.dd-modal[hidden] { display: none; }
+.dd-backdrop { position: absolute; inset: 0; background: rgba(24, 22, 20, 0.42); }
+.dd-sheet {
+  position: relative; z-index: 1; width: min(560px, calc(100vw - 32px));
+  max-height: min(80vh, 720px); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--panel); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.24);
+  padding: 18px 20px 20px;
+  animation: dd-pop .16s ease-out;
 }
-.dd-head { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
-  padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
-.dd-date { font-size: 15px; font-weight: 800; color: var(--red); }
+@keyframes dd-pop { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+.dd-close {
+  position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border: none;
+  background: transparent; color: var(--muted); font-size: 26px; line-height: 1; cursor: pointer;
+  border-radius: 8px;
+}
+.dd-close:hover { background: var(--panel-2); color: var(--text); }
+body.dd-open { overflow: hidden; }
+
+.day-detail { }
+.dd-head { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap;
+  padding: 0 34px 10px 0; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+.dd-date { font-size: 16px; font-weight: 800; color: var(--red); }
 .dd-self { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
 .dd-selfrot { font-size: 12px; color: var(--muted); }
 .dd-chip { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
 
-.dd-sub { font-size: 13px; color: var(--text); margin-bottom: 8px; }
+.dd-sub { font-size: 13px; color: var(--text); margin-bottom: 4px; }
 .dd-sub b { color: var(--red); }
 .dd-note { color: var(--muted); font-weight: 500; font-size: 11.5px; }
 
-.dd-peer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 8px 0; border-top: 1px solid var(--border); }
+.dd-peer { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap;
+  padding: 10px 0; border-top: 1px solid var(--border); }
 .dd-peer:first-of-type { border-top: none; }
 .dd-name { font-weight: 700; font-size: 13.5px; min-width: 150px; }
 .dd-role { font-size: 12px; color: var(--muted); flex: 1 1 auto; }
 .dd-empty { color: var(--muted); font-size: 13px; margin: 2px 0; }
 
-/* selected-day highlight on the calendar (day cell or list-view event row) */
-.fc .dd-picked.fc-daygrid-day .fc-daygrid-day-frame { box-shadow: inset 0 0 0 2px var(--red); border-radius: 6px; }
-.fc .dd-picked.fc-list-event td { box-shadow: inset 0 0 0 2px var(--red); }
-.fc-daygrid-event.dd-picked, .fc-daygrid-event.dd-picked .fc-event-main { outline: 2px solid var(--red); outline-offset: 1px; border-radius: 7px; }
+/* Selected-day highlight — one clean box around the WHOLE day, whether the
+   click lands on the empty cell or the assignment tile. (Month grid uses the
+   day cell; list view has no cells, so the event row is boxed instead.) */
+.fc .fc-daygrid-day.dd-picked .fc-daygrid-day-frame {
+  box-shadow: inset 0 0 0 2px var(--red); border-radius: 8px;
+}
+.fc .fc-list-event.dd-picked td { box-shadow: inset 0 0 0 2px var(--red); }
 
 /* ---------------------------- Responsive ---------------------------- */
 @media (max-width: 760px) {
@@ -307,6 +327,16 @@ button.btn.primary:hover { filter: brightness(0.94); }
   .off-person { justify-content: flex-start; gap: 10px; }
   .off-week { overflow-x: auto; padding-bottom: 2px; }
   .fc .fc-toolbar-title { font-size: 16px; }
+
+  /* Day detail becomes a bottom sheet that slides up over the calendar —
+     no scrolling to the bottom of the page to see who's on. */
+  .dd-modal { align-items: flex-end; justify-content: stretch; }
+  .dd-sheet {
+    width: 100%; max-height: 82vh; border-radius: 18px 18px 0 0;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    animation: dd-slideup .2s ease-out;
+  }
+  @keyframes dd-slideup { from { transform: translateY(100%); } to { transform: none; } }
 }
 @media (max-width: 520px) {
   header.app .brand { flex: 1 1 auto; }

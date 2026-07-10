@@ -38,7 +38,13 @@
       <div class="summary" id="summary"></div>
       <div id="calendar"></div>
 
-      <div class="day-detail" id="day-detail" hidden></div>
+      <div class="dd-modal" id="day-modal" hidden>
+        <div class="dd-backdrop" data-close></div>
+        <div class="dd-sheet" role="dialog" aria-modal="true" aria-label="Who's on this rotation">
+          <button class="dd-close" id="day-close" type="button" aria-label="Close">&times;</button>
+          <div class="day-detail" id="day-detail"></div>
+        </div>
+      </div>
 
       <div class="legend" id="legend">
         <span class="chip"><span class="sw ev-admit"></span> Admit / long call</span>
