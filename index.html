@@ -33,12 +33,14 @@
         <select id="person" aria-label="Select person">
           <option value="">— select a name —</option>
         </select>
-        <button class="btn primary ics-btn" id="ics-btn" type="button" hidden>
-          <span class="ics-ic" aria-hidden="true">📅</span> Add to calendar
+        <button class="btn primary ics-btn" id="gcal-btn" type="button" hidden>
+          <span class="ics-ic" aria-hidden="true">📅</span> Add to Google Calendar
         </button>
+        <button class="btn ics-btn" id="ics-btn" type="button" hidden>Download .ics</button>
       </div>
       <p class="ics-hint" id="ics-hint" hidden>
-        Downloads a <code>.ics</code> of the whole year — open it on your phone to add every shift to your calendar.
+        <b>Google Calendar</b> opens a one-tap subscribe prompt. <b>Download .ics</b> works on Apple Calendar,
+        Outlook, or any app — open the file to add every shift for the year.
       </p>
 
       <div class="summary" id="summary"></div>

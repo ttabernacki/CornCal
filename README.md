@@ -63,8 +63,16 @@ engine.js                        pure lookup engine (also runnable in Node)
 data/*.json                      generated data the app fetches
 tools/extract_templates.py       coordinate-aware template extraction from the master PDF
 tools/generate_data.py           builds weeks/assignments/meta + validates role labels
+tools/generate_ics.js            builds cal/<init>.ics feeds from the engine
+cal/<init>.ics                   hosted per-intern iCal feeds (Google/Apple subscribe)
 sources/*.pdf                    the original schedule PDFs
 ```
+
+The schedule tab can add a person's whole year to a phone: **Add to Google
+Calendar** subscribes to that intern's hosted `cal/<init>.ics` feed (via a
+`webcal://` `cid` link), and **Download .ics** hands the same file to Apple
+Calendar / Outlook / any app. Regenerate the feeds after changing `data/` with
+`node tools/generate_ics.js`.
 
 > Note: `tools/` and `sources/` are kept in the local working copy for
 > reproducibility. The deployed site only needs the web files + `data/*.json`.

@@ -5,6 +5,7 @@
 
   const els = {
     person: document.getElementById("person"),
+    gcalBtn: document.getElementById("gcal-btn"),
     icsBtn: document.getElementById("ics-btn"),
     icsHint: document.getElementById("ics-hint"),
     summary: document.getElementById("summary"),
@@ -120,6 +121,7 @@
     dayPicked = null;
     clearDayDetail(); // stale once the person changes
     renderSummary(person);
+    if (els.gcalBtn) els.gcalBtn.hidden = !person;
     if (els.icsBtn) els.icsBtn.hidden = !person;
     if (els.icsHint) els.icsHint.hidden = !person;
 
@@ -252,7 +254,19 @@
     openDayModal();
   }
 
-  // ---------------- iCal export: add my schedule to a phone ----------------
+  // ---------------- Calendar export: Google subscribe + .ics download --------
+  // Public per-intern feeds live under cal/<init>.ics on the same origin.
+  function icsFeedUrl(init) {
+    return new URL("cal/" + encodeURIComponent(init) + ".ics", window.location.href).href;
+  }
+  // Google Calendar subscribes to an external feed via ?cid=<webcal URL>.
+  function addToGoogle() {
+    if (!currentInit) return;
+    const webcal = icsFeedUrl(currentInit).replace(/^https?:/, "webcal:");
+    const url = "https://calendar.google.com/calendar/render?cid=" + encodeURIComponent(webcal);
+    window.open(url, "_blank", "noopener");
+  }
+
   function downloadICS() {
     const person = data.assignments.find((p) => p.init === currentInit);
     if (!person) return;
@@ -499,6 +513,7 @@
       if (b) switchTab(b.dataset.tab);
     });
 
+    if (els.gcalBtn) els.gcalBtn.addEventListener("click", addToGoogle);
     if (els.icsBtn) els.icsBtn.addEventListener("click", downloadICS);
 
     // Day-detail modal: close on the × button, backdrop tap, or Escape.
