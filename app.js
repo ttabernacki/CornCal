@@ -4,7 +4,14 @@
   const E = window.CornCalEngine;
 
   const els = {
-    person: document.getElementById("person"),
+    personInput: document.getElementById("person-input"),
+    personClear: document.getElementById("person-clear"),
+    personList: document.getElementById("person-list"),
+    personCombo: document.getElementById("person-combo"),
+    scheduleEmpty: document.getElementById("schedule-empty"),
+    legend: document.getElementById("legend"),
+    legendWeekend: document.getElementById("legend-weekend"),
+    disclaimer: document.getElementById("disclaimer"),
     gcalBtn: document.getElementById("gcal-btn"),
     icsBtn: document.getElementById("ics-btn"),
     icsHint: document.getElementById("ics-hint"),
@@ -32,6 +39,8 @@
   let eventsByPerson = {}; // init -> FullCalendar events
   let weekendTier = {};    // ISO date (Sat or Sun) -> "gold" | "silver" | "black"
   let dayPicked = null;    // DOM node currently highlighted as the selected day
+  let comboMatches = [];   // people currently shown in the search dropdown
+  let comboActive = -1;    // keyboard-highlighted row in the dropdown
 
   async function loadJSON(path) {
     const r = await fetch(path);
@@ -95,7 +104,7 @@
     }
     const card = (k, v) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div></div>`;
     els.summary.innerHTML =
-      card("Name", person.name) +
+      card("Name", fullName(person.name)) +
       card("Track", person.track) +
       card("Admit / long-call days", counts.admit) +
       card("Night days", counts.night) +
@@ -121,9 +130,13 @@
     dayPicked = null;
     clearDayDetail(); // stale once the person changes
     renderSummary(person);
+    setScheduleEmpty(!person);
     if (els.gcalBtn) els.gcalBtn.hidden = !person;
     if (els.icsBtn) els.icsBtn.hidden = !person;
     if (els.icsHint) els.icsHint.hidden = !person;
+    if (els.personClear) els.personClear.hidden = !person;
+    if (person && els.personInput && document.activeElement !== els.personInput)
+      els.personInput.value = fullName(person.name);
 
     const url = new URL(window.location);
     if (init) url.searchParams.set("p", init);
@@ -131,30 +144,110 @@
     history.replaceState(null, "", url);
   }
 
-  function populatePicker() {
-    const groups = {};
-    for (const p of data.assignments) (groups[p.track] ||= []).push(p);
-    for (const track of Object.keys(groups)) {
-      const og = document.createElement("optgroup");
-      og.label = track;
-      groups[track]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .forEach((p) => {
-          const o = document.createElement("option");
-          o.value = p.init;
-          o.textContent = `${p.name} (${p.init})`;
-          og.appendChild(o);
-        });
-      els.person.appendChild(og);
-    }
+  // Empty-state: before a name is picked, show the prompt and hide the calendar,
+  // legend, weekend key and disclaimer (nothing to explain yet).
+  function setScheduleEmpty(empty) {
+    const hide = (el, h) => { if (el) el.hidden = h; };
+    hide(els.scheduleEmpty, !empty);
+    hide(els.calendar, empty);
+    hide(els.summary, empty);
+    hide(els.legend, empty);
+    hide(els.legendWeekend, empty);
+    hide(els.disclaimer, empty);
+    if (!empty && calendar) calendar.updateSize();
+  }
+
+  // ---------------------- Searchable name picker (combobox) ----------------------
+  const peopleSorted = () =>
+    [...data.assignments].sort((a, b) => fullName(a.name).localeCompare(fullName(b.name)));
+
+  function renderComboList(q) {
+    q = (q || "").trim().toLowerCase();
+    const all = peopleSorted();
+    comboMatches = all.filter((p) => {
+      if (!q) return true;
+      return (fullName(p.name) + " " + p.name + " " + p.init).toLowerCase().includes(q);
+    });
+    comboActive = -1;
+    els.personList.innerHTML = comboMatches.length
+      ? comboMatches
+          .map(
+            (p, i) =>
+              `<li class="combo-opt" role="option" id="combo-opt-${i}" data-init="${p.init}" data-i="${i}">` +
+              `<span class="combo-name">${fullName(p.name)}</span>` +
+              `<span class="combo-track">${p.track}</span></li>`
+          )
+          .join("")
+      : `<li class="combo-empty">No match</li>`;
+  }
+
+  function openCombo() {
+    if (!els.personList) return;
+    renderComboList(els.personInput.value);
+    els.personList.hidden = false;
+    els.personInput.setAttribute("aria-expanded", "true");
+  }
+  function closeCombo() {
+    if (!els.personList) return;
+    els.personList.hidden = true;
+    els.personInput.setAttribute("aria-expanded", "false");
+    comboActive = -1;
+  }
+  function chooseCombo(init) {
+    closeCombo();
+    if (els.personInput) els.personInput.blur();
+    selectPerson(init);
+  }
+  function setActive(i) {
+    const opts = els.personList.querySelectorAll(".combo-opt");
+    if (!opts.length) return;
+    comboActive = (i + opts.length) % opts.length;
+    opts.forEach((o, k) => o.classList.toggle("is-active", k === comboActive));
+    opts[comboActive].scrollIntoView({ block: "nearest" });
+  }
+
+  function initCombo() {
+    els.personInput.addEventListener("focus", openCombo);
+    els.personInput.addEventListener("input", () => {
+      openCombo();
+      els.personClear.hidden = !els.personInput.value;
+    });
+    els.personInput.addEventListener("keydown", (e) => {
+      const open = !els.personList.hidden;
+      if (e.key === "ArrowDown") { e.preventDefault(); if (!open) openCombo(); setActive(comboActive + 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setActive(comboActive - 1); }
+      else if (e.key === "Enter") {
+        const pick = comboActive >= 0 ? comboMatches[comboActive] : comboMatches[0];
+        if (pick) { e.preventDefault(); chooseCombo(pick.init); }
+      } else if (e.key === "Escape") { closeCombo(); }
+    });
+    els.personList.addEventListener("mousedown", (e) => {
+      // mousedown (not click) so it fires before the input's blur closes the list
+      const li = e.target.closest(".combo-opt");
+      if (li) { e.preventDefault(); chooseCombo(li.dataset.init); }
+    });
+    els.personClear.addEventListener("click", () => {
+      els.personInput.value = "";
+      els.personClear.hidden = true;
+      selectPerson("");
+      els.personInput.focus();
+    });
+    document.addEventListener("click", (e) => {
+      if (els.personCombo && !els.personCombo.contains(e.target)) closeCombo();
+    });
   }
 
   function initCalendar() {
     const narrow = window.matchMedia("(max-width: 640px)").matches;
+    // Open on the current month (clamped into the academic year) rather than
+    // the year start, so a mid-year visitor lands on "now", not last June.
+    const ys = ctx.weekResolver.yearStart, ye = ctx.weekResolver.yearEnd;
+    const now = new Date();
+    const initialDate = now < ys ? ys : now >= ye ? E.addDays(ye, -1) : now;
     calendar = new FullCalendar.Calendar(els.calendar, {
       // list (agenda) reads far better than a cramped month grid on phones
       initialView: narrow ? "listMonth" : "dayGridMonth",
-      initialDate: ctx.weekResolver.yearStart,
+      initialDate: initialDate,
       validRange: {
         start: E.fmtISO(ctx.weekResolver.yearStart),
         end: E.fmtISO(ctx.weekResolver.yearEnd),
@@ -492,7 +585,7 @@
     data = { weeks, assignments, templates, meta };
     ctx = E.makeContext(data);
 
-    populatePicker();
+    initCombo();
     // Calendar depends on the FullCalendar CDN; if it fails to load, keep the
     // rest of the app working rather than breaking every tab.
     try {
@@ -532,14 +625,10 @@
       runTogether();
     });
 
-    els.person.addEventListener("change", (e) => selectPerson(e.target.value));
-
     // deep-link support: ?p=TT
     const initial = new URL(window.location).searchParams.get("p");
-    if (initial && data.assignments.some((p) => p.init === initial)) {
-      els.person.value = initial;
-      selectPerson(initial);
-    }
+    if (initial && data.assignments.some((p) => p.init === initial)) selectPerson(initial);
+    setScheduleEmpty(!currentInit);
   }
 
   main().catch((err) => {

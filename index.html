@@ -19,9 +19,9 @@
     </div>
     <h1 class="page-title">Internal Medicine Intern Schedule 2026-2027</h1>
     <nav class="tabs" id="tabs">
-      <button class="tab-btn active" data-tab="schedule">My schedule</button>
-      <button class="tab-btn" data-tab="together">Who’s free together</button>
-      <button class="tab-btn" data-tab="off">Who’s off on…</button>
+      <button class="tab-btn active" data-tab="schedule">Schedule</button>
+      <button class="tab-btn" data-tab="together">Free together</button>
+      <button class="tab-btn" data-tab="off">Who’s off</button>
     </nav>
   </header>
 
@@ -29,10 +29,14 @@
     <!-- ===================== Tab 1: single-person calendar ===================== -->
     <section class="tab-panel" id="tab-schedule">
       <div class="controls">
-        <label for="person">Find your schedule:</label>
-        <select id="person" aria-label="Select person">
-          <option value="">— select a name —</option>
-        </select>
+        <label for="person-input">Find your schedule:</label>
+        <div class="combo" id="person-combo">
+          <input type="text" id="person-input" class="combo-input" placeholder="Search a name…"
+                 autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list"
+                 aria-controls="person-list" aria-label="Search for an intern" />
+          <button class="combo-clear" id="person-clear" type="button" aria-label="Clear" hidden>&times;</button>
+          <ul class="combo-list" id="person-list" role="listbox" hidden></ul>
+        </div>
         <button class="btn primary ics-btn" id="gcal-btn" type="button" hidden>
           <span class="ics-ic" aria-hidden="true">📅</span> Add to Google Calendar
         </button>
@@ -43,8 +47,14 @@
         Outlook, or any app — open the file to add every shift for the year.
       </p>
 
-      <div class="summary" id="summary"></div>
-      <div id="calendar"></div>
+      <div class="empty-state" id="schedule-empty">
+        <div class="empty-emoji" aria-hidden="true">🗓️</div>
+        <div class="empty-title">See any intern’s year at a glance</div>
+        <div class="empty-sub">Search a name above to load their schedule — spot days off, see who’s on with them, and add it to your phone.</div>
+      </div>
+
+      <div class="summary" id="summary" hidden></div>
+      <div id="calendar" hidden></div>
 
       <div class="dd-modal" id="day-modal" hidden>
         <div class="dd-backdrop" data-close></div>
@@ -54,7 +64,7 @@
         </div>
       </div>
 
-      <div class="legend" id="legend">
+      <div class="legend" id="legend" hidden>
         <span class="chip"><span class="sw ev-admit"></span> Admit / long call</span>
         <span class="chip"><span class="sw ev-night"></span> Nights</span>
         <span class="chip"><span class="sw ev-work"></span> Working day</span>
@@ -65,14 +75,14 @@
         <span class="chip"><span class="sw ev-off"></span> Off / vacation</span>
       </div>
 
-      <div class="legend" id="legend-weekend">
+      <div class="legend" id="legend-weekend" hidden>
         <span class="chip">Weekend box:</span>
         <span class="chip"><span class="sw wk-swatch wk-sw-gold"></span> both days off</span>
         <span class="chip"><span class="sw wk-swatch wk-sw-silver"></span> one day off</span>
         <span class="chip"><span class="sw wk-swatch wk-sw-black"></span> no days off</span>
       </div>
 
-      <p class="note" id="disclaimer">
+      <p class="note" id="disclaimer" hidden>
         Built by harmonizing the 2026–2027 intern <strong>assignment table</strong>,
         <strong>block schedule</strong>, and <strong>master/MICU call templates</strong>.
         <code>CIMA</code> and <code>Elective</code> render as clinic 9a–5p Mon–Fri;
