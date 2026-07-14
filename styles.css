@@ -97,6 +97,20 @@ main { padding: 20px; max-width: 1120px; margin: 0 auto; }
 .ics-ic { font-size: 15px; line-height: 1; }
 .ics-hint { color: var(--muted); font-size: 12px; margin: -8px 2px 16px; }
 .ics-hint code { background: var(--panel-2); padding: 1px 5px; border-radius: 5px; font-size: .92em; }
+
+/* callout banner (e.g. the Amion verify-your-schedule warning) */
+.callout {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; border-radius: var(--radius); margin: 0 0 16px;
+  font-size: 13px; line-height: 1.5;
+}
+.callout-ic { flex: none; font-size: 16px; line-height: 1.3; }
+.callout-warn { background: #fdf2e3; border: 1px solid #f0d9b0; color: #7a4d13; }
+.callout-warn strong { color: #7a4d13; }
+@media (prefers-color-scheme: dark) {
+  .callout-warn { background: #3a2c14; border-color: #5c451f; color: #f2d9ad; }
+  .callout-warn strong { color: #f8e4bd; }
+}
 select, input[type="search"], input[type="date"], .combo-input {
   background: var(--panel); color: var(--text);
   border: 1px solid var(--border-strong); border-radius: 10px;
