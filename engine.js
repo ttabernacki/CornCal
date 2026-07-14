@@ -515,6 +515,35 @@
     return { selected: dateISO, mon: fmtISO(mon), weekDates, people };
   }
 
+  /*
+   * "Who's around" on a given evening: split a pool of interns (all, or a chosen
+   * subset by init) into those free that night vs those working. `freeFrom` is
+   * the minute-of-day they're off call (0 = free all day); people on nights /
+   * Jeopardy / shift-based off-service go in `busy` (not reliably free). Sorted
+   * so the earliest-free / off-all-day people surface first.
+   */
+  function whoIsAround(assignments, ctx, dateISO, inits) {
+    const date = parseISO(dateISO);
+    if (date < ctx.weekResolver.yearStart || date >= ctx.weekResolver.yearEnd)
+      return { date: dateISO, inYear: false, around: [], busy: [] };
+    const set = inits && inits.length ? new Set(inits) : null;
+    const pool = set ? assignments.filter((p) => set.has(p.init)) : assignments;
+    const around = [], busy = [];
+    for (const p of pool) {
+      const day = resolveDayLive(date, p, ctx);
+      if (!day) continue; // not on the medicine schedule this day
+      const min = freeFromMinutes(day);
+      const rec = {
+        init: p.init, name: p.name, track: p.track,
+        freeFrom: min, duty: day.duty, hours: day.hours, cls: day.cls, rotation: day.rotation,
+      };
+      (min === null ? busy : around).push(rec);
+    }
+    around.sort((a, b) => a.freeFrom - b.freeFrom || a.name.localeCompare(b.name));
+    busy.sort((a, b) => a.name.localeCompare(b.name));
+    return { date: dateISO, inYear: true, around, busy };
+  }
+
   // ---- iCalendar (.ics) export ----------------------------------------
   function icsEscape(s) {
     return String(s == null ? "" : s)
@@ -595,7 +624,7 @@
     makeWeekResolver, makeContext, resolveDay, resolveYear,
     familyOf, hoursFor, classify, nightEndOf, applyPostCall,
     labelForWeek, normalizeService, analyzeGroup, groupRanges, freeFromMinutes,
-    mondayOf, offOnDate, resolveDayLive, rotationPeersOn, toICS, besties,
+    mondayOf, offOnDate, resolveDayLive, rotationPeersOn, toICS, besties, whoIsAround,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
