@@ -336,6 +336,33 @@ button.btn.primary:hover { filter: brightness(0.94); }
 .off-day.is-sel .off-duty { outline: 2px solid var(--red); outline-offset: 1px; }
 .d-none { color: var(--muted); border: 1px dashed var(--border-strong); }
 
+/* ------------------- Besties ------------------- */
+.bs-head { font-size: 15px; margin-bottom: 14px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.bs-head b { color: var(--red); font-size: 20px; font-weight: 800; }
+.bs-sub { font-size: 12px; }
+
+.bs-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 16px; margin-bottom: 8px; box-shadow: var(--shadow);
+}
+.bs-rank { flex: none; width: 26px; text-align: center; font-weight: 800; font-size: 15px; color: var(--muted); }
+.bs-main { flex: 1 1 auto; min-width: 0; }
+.bs-name { font-weight: 700; font-size: 14.5px; }
+.bs-track { font-size: 11px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+.bs-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.bs-chip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+
+.bs-weeks { flex: none; width: 128px; display: flex; align-items: center; gap: 8px; }
+.bs-bar { height: 8px; border-radius: 999px; background: var(--brand-grad); min-width: 6px; }
+.bs-wk { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.bs-wk b { color: var(--text); font-size: 15px; font-weight: 800; }
+
+@media (max-width: 560px) {
+  .bs-weeks { width: 84px; }
+  .bs-bar { display: none; }
+}
+
 /* ------------- Day detail: who's on my rotation (schedule tab) ------------- */
 /* Modal shell: centered dialog on desktop, bottom sheet on mobile. */
 .dd-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; }

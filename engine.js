@@ -393,6 +393,39 @@
     return { freeEvenings, fullDaysOff, sharedRotations: shaped, count: people.length };
   }
 
+  /*
+   * "Besties": for one intern, rank everyone else by how many weeks they spend
+   * on the SAME team rotation (normalizeService — electives/off-service/vacation
+   * don't count, CIMA does). Returns [{ init, name, track, weeks, services }]
+   * sorted by weeks desc then name; `services` breaks the total down per rotation.
+   */
+  function besties(assignments, ctx, selfInit) {
+    const self = assignments.find((p) => p.init === selfInit);
+    if (!self) return [];
+    const weeks = [...ctx.weeks].sort((a, b) => (a.start < b.start ? -1 : 1));
+    const acc = new Map(); // init -> { name, track, weeks, services:Map(svc->n) }
+    for (const w of weeks) {
+      const selfSvc = normalizeService(labelForWeek(self, w));
+      if (!selfSvc) continue;
+      for (const p of assignments) {
+        if (p.init === self.init) continue;
+        if (normalizeService(labelForWeek(p, w)) !== selfSvc) continue;
+        let e = acc.get(p.init);
+        if (!e) { e = { init: p.init, name: p.name, track: p.track, weeks: 0, services: new Map() }; acc.set(p.init, e); }
+        e.weeks += 1;
+        e.services.set(selfSvc, (e.services.get(selfSvc) || 0) + 1);
+      }
+    }
+    return [...acc.values()]
+      .map((e) => ({
+        init: e.init, name: e.name, track: e.track, weeks: e.weeks,
+        services: [...e.services.entries()]
+          .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+          .map(([service, weeks]) => ({ service, weeks })),
+      }))
+      .sort((a, b) => b.weeks - a.weeks || a.name.localeCompare(b.name));
+  }
+
   // The Monday that begins the Mon–Sun week containing `date`.
   function mondayOf(date) {
     return addDays(date, -weekdayMon0(date));
@@ -562,7 +595,7 @@
     makeWeekResolver, makeContext, resolveDay, resolveYear,
     familyOf, hoursFor, classify, nightEndOf, applyPostCall,
     labelForWeek, normalizeService, analyzeGroup, groupRanges, freeFromMinutes,
-    mondayOf, offOnDate, resolveDayLive, rotationPeersOn, toICS,
+    mondayOf, offOnDate, resolveDayLive, rotationPeersOn, toICS, besties,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
