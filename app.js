@@ -30,11 +30,9 @@
     tgSelected: document.getElementById("together-selected"),
     tgResults: document.getElementById("together-results"),
     aroundDate: document.getElementById("around-date"),
-    aroundTonight: document.getElementById("around-tonight"),
+    aroundToday: document.getElementById("around-today"),
+    aroundMode: document.getElementById("around-mode"),
     aroundResults: document.getElementById("around-results"),
-    offDate: document.getElementById("off-date"),
-    offToday: document.getElementById("off-today"),
-    offResults: document.getElementById("off-results"),
     bestInput: document.getElementById("best-input"),
     bestClear: document.getElementById("best-clear"),
     bestList: document.getElementById("best-list"),
@@ -51,7 +49,8 @@
   let weekendTier = {};    // ISO date (Sat or Sun) -> "gold" | "silver" | "black"
   let dayPicked = null;    // DOM node currently highlighted as the selected day
   let bestInit = null;     // person selected in the Besties tab
-  let aroundDate = null;   // date shown in the "Who's around" hub (ISO)
+  let aroundDate = null;   // date shown in the "Who's around" tab (ISO)
+  let aroundMode = "evening"; // "evening" (free after work) | "allday" (fully off)
 
   async function loadJSON(path) {
     const r = await fetch(path);
@@ -413,9 +412,9 @@
     for (const b of els.tabs.querySelectorAll(".tab-btn"))
       b.classList.toggle("active", b.dataset.tab === name);
     document.getElementById("tab-schedule").hidden = name !== "schedule";
+    document.getElementById("tab-around").hidden = name !== "around";
     document.getElementById("tab-together").hidden = name !== "together";
-    document.getElementById("tab-off").hidden = name !== "off";
-    document.getElementById("tab-besties").hidden = name !== "besties";
+    document.getElementById("tab-besties").hidden = name !== "besties"; // parked, always hidden
     // FullCalendar mis-sizes if it was laid out while hidden — fix on return.
     if (name === "schedule" && calendar) calendar.updateSize();
   }
@@ -592,33 +591,46 @@
     els.tgSelected.innerHTML = people.length
       ? `<b>${people.length} picked:</b> ${people.map(firstName).join(", ")}`
       : "";
-    renderAround();
-    // longer-range group planning only makes sense for 2+ people
+    // group planning needs 2+ people
     if (people.length >= 2) {
       renderTogether(E.analyzeGroup(people, ctx, new Date()), people);
     } else {
       els.tgResults.innerHTML =
         people.length === 1
           ? `<p class="tg-empty">Add one more person to see shared days off and overlapping rotations.</p>`
-          : "";
+          : `<p class="tg-empty">Pick two or more people to find when you’re all free together and where you overlap on service.</p>`;
     }
   }
 
-  // "Who's around" — everyone free that evening (all, or just the picked crew).
-  function renderAround() {
+  // ---------------------- "Who's around" (date → availability) ----------------------
+  const WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const fmtDateFull = (iso) =>
+    E.parseISO(iso).toLocaleDateString(undefined, {
+      weekday: "long", month: "long", day: "numeric", year: "numeric",
+    });
+  // person "Last, First" -> "First Last"
+  const fullName = (name) => {
+    const c = name.indexOf(",");
+    return c === -1 ? name : name.slice(c + 1).trim() + " " + name.slice(0, c);
+  };
+
+  function renderAvailability() {
     if (!els.aroundResults) return;
-    const inits = selectedInits.size ? [...selectedInits] : null;
-    const r = E.whoIsAround(data.assignments, ctx, aroundDate, inits);
+    if (aroundMode === "allday") renderOff(aroundDate);
+    else renderAround(aroundDate);
+  }
+
+  // Evening view: the whole class ranked by who's off-call that evening.
+  function renderAround(iso) {
+    const r = E.whoIsAround(data.assignments, ctx, iso, null);
     if (!r.inYear) {
       els.aroundResults.innerHTML = `<p class="tg-none">Pick a date within the 2026–2027 year.</p>`;
       return;
     }
-    const head =
-      `<div class="around-head"><b>${r.around.length}</b> around ${inits ? "of your crew " : ""}` +
-      `on ${fmtDateFull(aroundDate)}</div>`;
+    const head = `<div class="around-head"><b>${r.around.length}</b> around the evening of ${fmtDateFull(iso)}</div>`;
     let body;
     if (!r.around.length) {
-      body = `<p class="tg-none">No one ${inits ? "in your crew " : ""}is off-call that evening.</p>`;
+      body = `<p class="tg-none">No one is off-call that evening.</p>`;
     } else {
       body = `<div class="ar-list">` + r.around
         .map((a) => {
@@ -642,7 +654,7 @@
     els.aroundResults.innerHTML = head + body + busy;
   }
 
-  function initAround() {
+  function initAvailability() {
     const ys = E.fmtISO(ctx.weekResolver.yearStart);
     const ye = E.fmtISO(E.addDays(ctx.weekResolver.yearEnd, -1));
     const clamp = () => {
@@ -655,34 +667,32 @@
     aroundDate = clamp();
     els.aroundDate.value = aroundDate;
     els.aroundDate.addEventListener("change", () => {
-      if (els.aroundDate.value) { aroundDate = els.aroundDate.value; renderAround(); }
+      if (els.aroundDate.value) { aroundDate = els.aroundDate.value; renderAvailability(); }
     });
-    els.aroundTonight.addEventListener("click", () => {
+    els.aroundToday.addEventListener("click", () => {
       aroundDate = clamp();
       els.aroundDate.value = aroundDate;
-      renderAround();
+      renderAvailability();
     });
+    els.aroundMode.addEventListener("click", (e) => {
+      const b = e.target.closest(".seg-btn");
+      if (!b || b.dataset.mode === aroundMode) return;
+      aroundMode = b.dataset.mode;
+      for (const s of els.aroundMode.querySelectorAll(".seg-btn"))
+        s.classList.toggle("active", s.dataset.mode === aroundMode);
+      renderAvailability();
+    });
+    renderAvailability();
   }
 
-  // ---------------------- "Who's off on…" ----------------------
-  const WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const fmtDateFull = (iso) =>
-    E.parseISO(iso).toLocaleDateString(undefined, {
-      weekday: "long", month: "long", day: "numeric", year: "numeric",
-    });
-  // person "Last, First" -> "First Last"
-  const fullName = (name) => {
-    const c = name.indexOf(",");
-    return c === -1 ? name : name.slice(c + 1).trim() + " " + name.slice(0, c);
-  };
-
+  // All-day view: everyone fully OFF that day, with their Mon–Sun week grid.
   function renderOff(iso) {
     const r = E.offOnDate(data.assignments, ctx, iso);
     if (!r.people.length) {
-      els.offResults.innerHTML = `<p class="tg-none">No one is fully off on ${fmtDateFull(iso)}.</p>`;
+      els.aroundResults.innerHTML = `<p class="tg-none">No one is fully off on ${fmtDateFull(iso)}.</p>`;
       return;
     }
-    const head = `<div class="off-head"><b>${r.people.length}</b> off on ${fmtDateFull(iso)}</div>`;
+    const head = `<div class="off-head"><b>${r.people.length}</b> fully off on ${fmtDateFull(iso)}</div>`;
     const rows = r.people
       .map((p) => {
         const cells = p.week
@@ -699,29 +709,7 @@
           `<div class="off-week">${cells}</div></div>`;
       })
       .join("");
-    els.offResults.innerHTML = head + rows;
-  }
-
-  function initOff() {
-    const ys = E.fmtISO(ctx.weekResolver.yearStart);
-    const ye = E.fmtISO(E.addDays(ctx.weekResolver.yearEnd, -1));
-    els.offDate.min = ys;
-    els.offDate.max = ye;
-    // default to today, clamped into the academic year
-    let today = E.fmtISO(new Date());
-    if (today < ys) today = ys;
-    if (today > ye) today = ye;
-    els.offDate.value = today;
-    renderOff(today);
-    els.offDate.addEventListener("change", () => {
-      if (els.offDate.value) renderOff(els.offDate.value);
-    });
-    els.offToday.addEventListener("click", () => {
-      let t = E.fmtISO(new Date());
-      if (t < ys) t = ys; if (t > ye) t = ye;
-      els.offDate.value = t;
-      renderOff(t);
-    });
+    els.aroundResults.innerHTML = head + rows;
   }
 
   async function main() {
@@ -749,9 +737,8 @@
       console.error(err);
     }
     populateTogether();
-    initAround();
     runTogether();
-    initOff();
+    initAvailability();
 
     els.tabs.addEventListener("click", (e) => {
       const b = e.target.closest(".tab-btn");
