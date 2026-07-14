@@ -57,7 +57,7 @@
       allDay: true,
       title: d.duty,
       classNames: ["ev-" + d.cls],
-      extendedProps: { rotation: d.rotation, hours: d.hours, duty: d.duty },
+      extendedProps: { rotation: d.rotation, hours: d.hours, duty: d.duty, cls: d.cls },
     }));
   }
 
@@ -299,11 +299,18 @@
       dateClick: (info) => showDayDetail(info.dateStr, info.dayEl),
       eventClick: (info) => showDayDetail(info.event.startStr, info.el),
       eventContent: (arg) => {
-        const { rotation, hours, duty } = arg.event.extendedProps;
+        const { rotation, hours, duty, cls } = arg.event.extendedProps;
+        // On daytime working assignments, lead with the rotation (e.g. "MICU
+        // Int 3") and put the shift code (e.g. "B1") underneath. Nights, OFF
+        // and post-call keep the duty as the headline.
+        const daytime = ["work", "admit", "clinic", "consult"].includes(cls);
+        const swap = daytime && rotation && rotation !== duty;
+        const head = swap ? rotation : duty;
+        const sub = swap ? duty : rotation;
         const wrap = document.createElement("div");
         wrap.innerHTML =
-          `<div class="ev-duty">${duty}</div>` +
-          `<div class="ev-rot">${rotation}</div>` +
+          `<div class="ev-duty">${head}</div>` +
+          `<div class="ev-rot">${sub}</div>` +
           (hours ? `<div class="ev-hrs">${hours}</div>` : "");
         return { domNodes: [wrap] };
       },
