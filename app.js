@@ -9,6 +9,7 @@
     personList: document.getElementById("person-list"),
     personCombo: document.getElementById("person-combo"),
     scheduleEmpty: document.getElementById("schedule-empty"),
+    amionNote: document.getElementById("amion-note"),
     calHint: document.getElementById("cal-hint"),
     glossary: document.getElementById("glossary"),
     glossaryBody: document.getElementById("glossary-body"),
@@ -160,6 +161,7 @@
   function setScheduleEmpty(empty) {
     const hide = (el, h) => { if (el) el.hidden = h; };
     hide(els.scheduleEmpty, !empty);
+    hide(els.amionNote, empty);
     hide(els.calendar, empty);
     hide(els.calHint, empty);
     hide(els.summary, empty);
