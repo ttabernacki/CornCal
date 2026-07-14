@@ -22,6 +22,7 @@
       <button class="tab-btn active" data-tab="schedule">Schedule</button>
       <button class="tab-btn" data-tab="together">Free together</button>
       <button class="tab-btn" data-tab="off">Who’s off</button>
+      <button class="tab-btn" data-tab="besties">Besties</button>
     </nav>
   </header>
 
@@ -126,6 +127,21 @@
         <button class="btn" id="off-today" type="button">Today</button>
       </div>
       <div id="off-results"></div>
+    </section>
+
+    <!-- ===================== Tab 4: besties (most-shared rotations) ===================== -->
+    <section class="tab-panel" id="tab-besties" hidden>
+      <div class="controls">
+        <label for="best-input">Whose besties?</label>
+        <div class="combo" id="best-combo">
+          <input type="text" id="best-input" class="combo-input" placeholder="Search a name…"
+                 autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list"
+                 aria-controls="best-list" aria-label="Search for an intern" />
+          <button class="combo-clear" id="best-clear" type="button" aria-label="Clear" hidden>&times;</button>
+          <ul class="combo-list" id="best-list" role="listbox" hidden></ul>
+        </div>
+      </div>
+      <div id="best-results"></div>
     </section>
   </main>
 

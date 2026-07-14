@@ -32,6 +32,11 @@
     offDate: document.getElementById("off-date"),
     offToday: document.getElementById("off-today"),
     offResults: document.getElementById("off-results"),
+    bestInput: document.getElementById("best-input"),
+    bestClear: document.getElementById("best-clear"),
+    bestList: document.getElementById("best-list"),
+    bestCombo: document.getElementById("best-combo"),
+    bestResults: document.getElementById("best-results"),
   };
   const selectedInits = new Set();
 
@@ -42,8 +47,7 @@
   let eventsByPerson = {}; // init -> FullCalendar events
   let weekendTier = {};    // ISO date (Sat or Sun) -> "gold" | "silver" | "black"
   let dayPicked = null;    // DOM node currently highlighted as the selected day
-  let comboMatches = [];   // people currently shown in the search dropdown
-  let comboActive = -1;    // keyboard-highlighted row in the dropdown
+  let bestInit = null;     // person selected in the Besties tab
 
   async function loadJSON(path) {
     const r = await fetch(path);
@@ -196,80 +200,61 @@
   const peopleSorted = () =>
     [...data.assignments].sort((a, b) => fullName(a.name).localeCompare(fullName(b.name)));
 
-  function renderComboList(q) {
-    q = (q || "").trim().toLowerCase();
-    const all = peopleSorted();
-    comboMatches = all.filter((p) => {
-      if (!q) return true;
-      return (fullName(p.name) + " " + p.name + " " + p.init).toLowerCase().includes(q);
-    });
-    comboActive = -1;
-    els.personList.innerHTML = comboMatches.length
-      ? comboMatches
-          .map(
-            (p, i) =>
-              `<li class="combo-opt" role="option" id="combo-opt-${i}" data-init="${p.init}" data-i="${i}">` +
-              `<span class="combo-name">${fullName(p.name)}</span>` +
-              `<span class="combo-track">${p.track}</span></li>`
-          )
-          .join("")
-      : `<li class="combo-empty">No match</li>`;
-  }
+  // Reusable typeahead. `onChoose(init)` gets "" when cleared. Returns a small
+  // handle so callers can set the displayed value programmatically (deep-links).
+  function makeCombo({ input, clear, list, container, onChoose }) {
+    let matches = [];
+    let active = -1;
+    function render(q) {
+      q = (q || "").trim().toLowerCase();
+      matches = peopleSorted().filter(
+        (p) => !q || (fullName(p.name) + " " + p.name + " " + p.init).toLowerCase().includes(q)
+      );
+      active = -1;
+      list.innerHTML = matches.length
+        ? matches
+            .map(
+              (p, i) =>
+                `<li class="combo-opt" role="option" data-init="${p.init}" data-i="${i}">` +
+                `<span class="combo-name">${fullName(p.name)}</span>` +
+                `<span class="combo-track">${p.track}</span></li>`
+            )
+            .join("")
+        : `<li class="combo-empty">No match</li>`;
+    }
+    const open = () => { render(input.value); list.hidden = false; input.setAttribute("aria-expanded", "true"); };
+    const close = () => { list.hidden = true; input.setAttribute("aria-expanded", "false"); active = -1; };
+    function setActive(i) {
+      const opts = list.querySelectorAll(".combo-opt");
+      if (!opts.length) return;
+      active = (i + opts.length) % opts.length;
+      opts.forEach((o, k) => o.classList.toggle("is-active", k === active));
+      opts[active].scrollIntoView({ block: "nearest" });
+    }
+    function choose(init) { close(); input.blur(); onChoose(init); }
 
-  function openCombo() {
-    if (!els.personList) return;
-    renderComboList(els.personInput.value);
-    els.personList.hidden = false;
-    els.personInput.setAttribute("aria-expanded", "true");
-  }
-  function closeCombo() {
-    if (!els.personList) return;
-    els.personList.hidden = true;
-    els.personInput.setAttribute("aria-expanded", "false");
-    comboActive = -1;
-  }
-  function chooseCombo(init) {
-    closeCombo();
-    if (els.personInput) els.personInput.blur();
-    selectPerson(init);
-  }
-  function setActive(i) {
-    const opts = els.personList.querySelectorAll(".combo-opt");
-    if (!opts.length) return;
-    comboActive = (i + opts.length) % opts.length;
-    opts.forEach((o, k) => o.classList.toggle("is-active", k === comboActive));
-    opts[comboActive].scrollIntoView({ block: "nearest" });
-  }
-
-  function initCombo() {
-    els.personInput.addEventListener("focus", openCombo);
-    els.personInput.addEventListener("input", () => {
-      openCombo();
-      els.personClear.hidden = !els.personInput.value;
-    });
-    els.personInput.addEventListener("keydown", (e) => {
-      const open = !els.personList.hidden;
-      if (e.key === "ArrowDown") { e.preventDefault(); if (!open) openCombo(); setActive(comboActive + 1); }
-      else if (e.key === "ArrowUp") { e.preventDefault(); setActive(comboActive - 1); }
+    input.addEventListener("focus", open);
+    input.addEventListener("input", () => { open(); if (clear) clear.hidden = !input.value; });
+    input.addEventListener("keydown", (e) => {
+      const isOpen = !list.hidden;
+      if (e.key === "ArrowDown") { e.preventDefault(); if (!isOpen) open(); setActive(active + 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setActive(active - 1); }
       else if (e.key === "Enter") {
-        const pick = comboActive >= 0 ? comboMatches[comboActive] : comboMatches[0];
-        if (pick) { e.preventDefault(); chooseCombo(pick.init); }
-      } else if (e.key === "Escape") { closeCombo(); }
+        const pick = active >= 0 ? matches[active] : matches[0];
+        if (pick) { e.preventDefault(); choose(pick.init); }
+      } else if (e.key === "Escape") { close(); }
     });
-    els.personList.addEventListener("mousedown", (e) => {
+    list.addEventListener("mousedown", (e) => {
       // mousedown (not click) so it fires before the input's blur closes the list
       const li = e.target.closest(".combo-opt");
-      if (li) { e.preventDefault(); chooseCombo(li.dataset.init); }
+      if (li) { e.preventDefault(); choose(li.dataset.init); }
     });
-    els.personClear.addEventListener("click", () => {
-      els.personInput.value = "";
-      els.personClear.hidden = true;
-      selectPerson("");
-      els.personInput.focus();
+    if (clear) clear.addEventListener("click", () => {
+      input.value = ""; clear.hidden = true; onChoose(""); input.focus();
     });
-    document.addEventListener("click", (e) => {
-      if (els.personCombo && !els.personCombo.contains(e.target)) closeCombo();
-    });
+    document.addEventListener("click", (e) => { if (container && !container.contains(e.target)) close(); });
+
+    return { setValue(v) { input.value = v || ""; if (clear) clear.hidden = !v; } };
   }
 
   function initCalendar() {
@@ -426,8 +411,61 @@
     document.getElementById("tab-schedule").hidden = name !== "schedule";
     document.getElementById("tab-together").hidden = name !== "together";
     document.getElementById("tab-off").hidden = name !== "off";
+    document.getElementById("tab-besties").hidden = name !== "besties";
     // FullCalendar mis-sizes if it was laid out while hidden — fix on return.
     if (name === "schedule" && calendar) calendar.updateSize();
+  }
+
+  // ---------------------- "Besties" ----------------------
+  function selectBesties(init) {
+    const person = data.assignments.find((p) => p.init === init);
+    bestInit = person ? person.init : null;
+    if (person && els.bestInput && document.activeElement !== els.bestInput)
+      els.bestInput.value = fullName(person.name);
+    renderBesties(person);
+  }
+
+  function renderBesties(person) {
+    if (!els.bestResults) return;
+    if (!person) {
+      els.bestResults.innerHTML =
+        `<div class="empty-state"><div class="empty-emoji" aria-hidden="true">🤝</div>` +
+        `<div class="empty-title">Find someone’s besties</div>` +
+        `<div class="empty-sub">Search a name above to rank who they share the most rotation weeks with over the year.</div></div>`;
+      return;
+    }
+    const list = E.besties(data.assignments, ctx, person.init);
+    if (!list.length) {
+      els.bestResults.innerHTML =
+        `<p class="tg-none">${fullName(person.name)} never shares a team rotation with anyone this year.</p>`;
+      return;
+    }
+    const head =
+      `<div class="bs-head"><b>${fullName(person.name)}</b>’s besties` +
+      `<span class="bs-sub">most weeks on the same rotation · whole year</span></div>`;
+    const maxW = list[0].weeks;
+    const rows = list
+      .map((b, i) => {
+        const chips = b.services
+          .map((s) => `<span class="bs-chip tg-${svcClass(s.service)}">${s.service} · ${s.weeks}w</span>`)
+          .join("");
+        const bar = Math.max(6, Math.round((b.weeks / maxW) * 100));
+        return `<div class="bs-row"><span class="bs-rank">${i + 1}</span>` +
+          `<div class="bs-main"><div class="bs-name">${fullName(b.name)} <span class="bs-track">${b.track}</span></div>` +
+          `<div class="bs-chips">${chips}</div></div>` +
+          `<div class="bs-weeks"><span class="bs-bar" style="width:${bar}%"></span>` +
+          `<span class="bs-wk"><b>${b.weeks}</b> wk</span></div></div>`;
+      })
+      .join("");
+    els.bestResults.innerHTML = head + rows;
+  }
+  // map a shared-service name to a duty color class for the chip
+  function svcClass(service) {
+    if (/MICU/i.test(service)) return "consult";
+    if (/Nightfloat/i.test(service)) return "night";
+    if (/CIMA/i.test(service)) return "clinic";
+    if (/Geriatrics|Gold|Platinum|Lymphoma/i.test(service)) return "away";
+    return "work"; // Med teams, Renal, 4N …
   }
 
   // ---------------------- "Who's free together" ----------------------
@@ -627,7 +665,9 @@
     data = { weeks, assignments, templates, meta };
     ctx = E.makeContext(data);
 
-    initCombo();
+    makeCombo({ input: els.personInput, clear: els.personClear, list: els.personList, container: els.personCombo, onChoose: selectPerson });
+    makeCombo({ input: els.bestInput, clear: els.bestClear, list: els.bestList, container: els.bestCombo, onChoose: selectBesties });
+    renderBesties(null);
     // Calendar depends on the FullCalendar CDN; if it fails to load, keep the
     // rest of the app working rather than breaking every tab.
     try {
