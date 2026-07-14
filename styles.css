@@ -263,11 +263,38 @@ button.btn.primary:hover { filter: brightness(0.94); }
 .wk-sw-silver { background: rgba(154, 161, 172, 0.18); border-color: #9aa1ac; }
 .wk-sw-black  { background: rgba(30, 30, 30, 0.12); border-color: #3a3a3a; }
 
-/* ------------------- Who's free together ------------------- */
+/* ------------------- Who's around / free together ------------------- */
 .together { display: flex; gap: 18px; align-items: flex-start; }
 .tg-side { flex: 0 0 264px; position: sticky; top: 84px; }
 .tg-side input[type="search"] { width: 100%; }
+.tg-side-h { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.tg-side-h span { color: var(--muted); font-weight: 500; }
 .tg-main { flex: 1 1 auto; min-width: 0; }
+
+/* "Who's around" date bar + list */
+.around-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.around-bar label { font-size: 15px; color: var(--text); font-weight: 700; }
+.around-head { font-size: 15px; margin-bottom: 12px; color: var(--muted); }
+.around-head b { color: var(--red); font-size: 20px; font-weight: 800; }
+
+.ar-list {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden; margin-bottom: 14px;
+}
+.ar-row { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--border); }
+.ar-row:first-child { border-top: none; }
+.ar-name { font-weight: 700; font-size: 14px; flex: 1 1 auto; min-width: 0; }
+.ar-when { font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.ar-when.ar-allday { color: #15803d; }
+.ar-duty { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; flex: none; }
+
+.ar-busy { margin-bottom: 14px; font-size: 13px; }
+.ar-busy > summary { cursor: pointer; color: var(--muted); font-weight: 600; padding: 4px 2px; list-style: none; display: inline-flex; align-items: center; gap: 6px; }
+.ar-busy > summary::-webkit-details-marker { display: none; }
+.ar-busy > summary::before { content: "\25B8"; color: var(--muted); font-size: 10px; }
+.ar-busy[open] > summary::before { content: "\25BE"; }
+.ar-busywrap { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 2px 2px; }
+.ar-busychip { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; background: var(--panel-2); color: var(--muted); white-space: nowrap; }
 
 .tg-picker {
   margin: 10px 0; max-height: 60vh; overflow: auto;

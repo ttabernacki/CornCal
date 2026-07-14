@@ -29,6 +29,9 @@
     tgClear: document.getElementById("together-clear"),
     tgSelected: document.getElementById("together-selected"),
     tgResults: document.getElementById("together-results"),
+    aroundDate: document.getElementById("around-date"),
+    aroundTonight: document.getElementById("around-tonight"),
+    aroundResults: document.getElementById("around-results"),
     offDate: document.getElementById("off-date"),
     offToday: document.getElementById("off-today"),
     offResults: document.getElementById("off-results"),
@@ -48,6 +51,7 @@
   let weekendTier = {};    // ISO date (Sat or Sun) -> "gold" | "silver" | "black"
   let dayPicked = null;    // DOM node currently highlighted as the selected day
   let bestInit = null;     // person selected in the Besties tab
+  let aroundDate = null;   // date shown in the "Who's around" hub (ISO)
 
   async function loadJSON(path) {
     const r = await fetch(path);
@@ -586,13 +590,78 @@
       .map((i) => data.assignments.find((p) => p.init === i))
       .filter(Boolean);
     els.tgSelected.innerHTML = people.length
-      ? `<b>${people.length} selected:</b> ${people.map(firstName).join(", ")}`
+      ? `<b>${people.length} picked:</b> ${people.map(firstName).join(", ")}`
       : "";
-    if (!people.length) {
-      els.tgResults.innerHTML = `<p class="tg-empty">Select people on the left to find when they’re free together and when they overlap on service.</p>`;
+    renderAround();
+    // longer-range group planning only makes sense for 2+ people
+    if (people.length >= 2) {
+      renderTogether(E.analyzeGroup(people, ctx, new Date()), people);
+    } else {
+      els.tgResults.innerHTML =
+        people.length === 1
+          ? `<p class="tg-empty">Add one more person to see shared days off and overlapping rotations.</p>`
+          : "";
+    }
+  }
+
+  // "Who's around" — everyone free that evening (all, or just the picked crew).
+  function renderAround() {
+    if (!els.aroundResults) return;
+    const inits = selectedInits.size ? [...selectedInits] : null;
+    const r = E.whoIsAround(data.assignments, ctx, aroundDate, inits);
+    if (!r.inYear) {
+      els.aroundResults.innerHTML = `<p class="tg-none">Pick a date within the 2026–2027 year.</p>`;
       return;
     }
-    renderTogether(E.analyzeGroup(people, ctx, new Date()), people);
+    const head =
+      `<div class="around-head"><b>${r.around.length}</b> around ${inits ? "of your crew " : ""}` +
+      `on ${fmtDateFull(aroundDate)}</div>`;
+    let body;
+    if (!r.around.length) {
+      body = `<p class="tg-none">No one ${inits ? "in your crew " : ""}is off-call that evening.</p>`;
+    } else {
+      body = `<div class="ar-list">` + r.around
+        .map((a) => {
+          const when = a.freeFrom === 0 ? "off all day" : "free " + fmtTime(a.freeFrom);
+          const whenCls = a.freeFrom === 0 ? "ar-allday" : "";
+          const ctxLbl = a.duty + (a.hours ? " · " + a.hours : "");
+          return `<div class="ar-row"><span class="ar-name">${fullName(a.name)}</span>` +
+            `<span class="ar-when ${whenCls}">${when}</span>` +
+            `<span class="ar-duty tg-${a.cls}" title="${ctxLbl}">${a.duty}</span></div>`;
+        })
+        .join("") + `</div>`;
+    }
+    let busy = "";
+    if (r.busy.length) {
+      const chips = r.busy
+        .map((b) => `<span class="ar-busychip">${fullName(b.name)} · ${b.duty}</span>`)
+        .join("");
+      busy = `<details class="ar-busy"><summary>${r.busy.length} working / on nights</summary>` +
+        `<div class="ar-busywrap">${chips}</div></details>`;
+    }
+    els.aroundResults.innerHTML = head + body + busy;
+  }
+
+  function initAround() {
+    const ys = E.fmtISO(ctx.weekResolver.yearStart);
+    const ye = E.fmtISO(E.addDays(ctx.weekResolver.yearEnd, -1));
+    const clamp = () => {
+      let t = E.fmtISO(new Date());
+      if (t < ys) t = ys; if (t > ye) t = ye;
+      return t;
+    };
+    els.aroundDate.min = ys;
+    els.aroundDate.max = ye;
+    aroundDate = clamp();
+    els.aroundDate.value = aroundDate;
+    els.aroundDate.addEventListener("change", () => {
+      if (els.aroundDate.value) { aroundDate = els.aroundDate.value; renderAround(); }
+    });
+    els.aroundTonight.addEventListener("click", () => {
+      aroundDate = clamp();
+      els.aroundDate.value = aroundDate;
+      renderAround();
+    });
   }
 
   // ---------------------- "Who's off on…" ----------------------
@@ -680,6 +749,7 @@
       console.error(err);
     }
     populateTogether();
+    initAround();
     runTogether();
     initOff();
 
