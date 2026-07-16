@@ -402,8 +402,13 @@ button.btn.primary:hover { filter: brightness(0.94); }
 
 .bs-weeks { flex: none; width: 128px; display: flex; align-items: center; gap: 8px; }
 .bs-bar { height: 8px; border-radius: 999px; background: var(--brand-grad); min-width: 6px; }
+.bs-bar-over { background: var(--red); }
+.bs-bar-under { background: #15803d; }
 .bs-wk { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .bs-wk b { color: var(--text); font-size: 15px; font-weight: 800; }
+
+.fair-note { color: var(--muted); font-size: 12.5px; line-height: 1.55; margin: 0 2px 16px; max-width: 74ch; }
+.fair-note b { color: var(--text); font-weight: 600; }
 
 @media (max-width: 560px) {
   .bs-weeks { width: 84px; }
