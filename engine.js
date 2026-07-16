@@ -426,43 +426,6 @@
       .sort((a, b) => b.weeks - a.weeks || a.name.localeCompare(b.name));
   }
 
-  /*
-   * Schedule "load" comparison across the class. Approximate burden per intern:
-   *   load = night shifts + long-call/admit days + weekend days worked.
-   * Also reports days off and "golden" weekends (both Sat+Sun off) for context.
-   * Returns [{ init, name, track, nights, longcall, offDays, wkndWorked, golden,
-   * load }] sorted heaviest → lightest.
-   */
-  function fairness(assignments, ctx) {
-    const out = [];
-    for (const p of assignments) {
-      const days = resolveYear(p, ctx);
-      let nights = 0, longcall = 0, offDays = 0, wkndWorked = 0, golden = 0;
-      const wkndCls = {}; // Sat/Sun ISO -> cls (for golden-weekend pairing)
-      for (const d of days) {
-        if (d.cls === "night") nights++;
-        else if (d.cls === "admit") longcall++;
-        if (d.cls === "off") offDays++;
-        const dow = weekdayMon0(parseISO(d.date)); // 5 = Sat, 6 = Sun
-        if (dow >= 5) {
-          wkndCls[d.date] = d.cls;
-          if (["work", "admit", "night", "consult"].includes(d.cls)) wkndWorked++;
-        }
-      }
-      for (const iso in wkndCls) {
-        const dt = parseISO(iso);
-        if (weekdayMon0(dt) === 5 && wkndCls[iso] === "off" &&
-            wkndCls[fmtISO(addDays(dt, 1))] === "off") golden++;
-      }
-      out.push({
-        init: p.init, name: p.name, track: p.track,
-        nights, longcall, offDays, wkndWorked, golden,
-        load: nights + longcall + wkndWorked,
-      });
-    }
-    return out.sort((a, b) => b.load - a.load || a.name.localeCompare(b.name));
-  }
-
   // The Monday that begins the Mon–Sun week containing `date`.
   function mondayOf(date) {
     return addDays(date, -weekdayMon0(date));
@@ -662,7 +625,6 @@
     familyOf, hoursFor, classify, nightEndOf, applyPostCall,
     labelForWeek, normalizeService, analyzeGroup, groupRanges, freeFromMinutes,
     mondayOf, offOnDate, resolveDayLive, rotationPeersOn, toICS, besties, whoIsAround,
-    fairness,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
