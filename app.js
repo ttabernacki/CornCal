@@ -34,6 +34,7 @@
     aroundToday: document.getElementById("around-today"),
     aroundMode: document.getElementById("around-mode"),
     aroundResults: document.getElementById("around-results"),
+    fairResults: document.getElementById("fairness-results"),
     bestInput: document.getElementById("best-input"),
     bestClear: document.getElementById("best-clear"),
     bestList: document.getElementById("best-list"),
@@ -416,6 +417,7 @@
     document.getElementById("tab-schedule").hidden = name !== "schedule";
     document.getElementById("tab-around").hidden = name !== "around";
     document.getElementById("tab-together").hidden = name !== "together";
+    document.getElementById("tab-fairness").hidden = name !== "fairness";
     document.getElementById("tab-besties").hidden = name !== "besties"; // parked, always hidden
     // FullCalendar mis-sizes if it was laid out while hidden — fix on return.
     if (name === "schedule" && calendar) calendar.updateSize();
@@ -471,6 +473,39 @@
     if (/CIMA/i.test(service)) return "clinic";
     if (/Geriatrics|Gold|Platinum|Lymphoma/i.test(service)) return "away";
     return "work"; // Med teams, Renal, 4N …
+  }
+
+  // ---------------------- "Fairness" (class-wide schedule load) ----------------------
+  function renderFairness() {
+    if (!els.fairResults) return;
+    const list = E.fairness(data.assignments, ctx);
+    if (!list.length) return;
+    const avg = list.reduce((s, x) => s + x.load, 0) / list.length;
+    const maxL = list[0].load || 1;
+    const head =
+      `<div class="bs-head"><b>Schedule load</b>` +
+      `<span class="bs-sub">heaviest → lightest · class average ${Math.round(avg)}</span></div>`;
+    const note =
+      `<p class="fair-note">Rough load = <b>night shifts + long-call/admit days + weekend days worked</b>, ` +
+      `over the whole year. A ballpark comparison of the original schedule — not an official metric, and ` +
+      `off-service months (ED, Neuro, MSKCC…) aren’t scored. The bar is red above the class average, green below.</p>`;
+    const rows = list
+      .map((x, i) => {
+        const bar = Math.max(4, Math.round((x.load / maxL) * 100));
+        const rel = x.load >= avg ? "over" : "under";
+        const chips =
+          `<span class="bs-chip tg-night">${x.nights} nights</span>` +
+          `<span class="bs-chip tg-admit">${x.longcall} long-call</span>` +
+          `<span class="bs-chip tg-work">${x.wkndWorked} wknd days</span>` +
+          `<span class="bs-chip tg-off">${x.golden} golden wknds</span>`;
+        return `<div class="bs-row"><span class="bs-rank">${i + 1}</span>` +
+          `<div class="bs-main"><div class="bs-name">${fullName(x.name)} <span class="bs-track">${x.track}</span></div>` +
+          `<div class="bs-chips">${chips}</div></div>` +
+          `<div class="bs-weeks"><span class="bs-bar bs-bar-${rel}" style="width:${bar}%"></span>` +
+          `<span class="bs-wk"><b>${x.load}</b></span></div></div>`;
+      })
+      .join("");
+    els.fairResults.innerHTML = head + note + rows;
   }
 
   // ---------------------- "Who's free together" ----------------------
@@ -741,6 +776,7 @@
     populateTogether();
     runTogether();
     initAvailability();
+    renderFairness();
 
     els.tabs.addEventListener("click", (e) => {
       const b = e.target.closest(".tab-btn");
